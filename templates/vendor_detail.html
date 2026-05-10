@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<header class="page-header">
+  <div>
+    <span class="badge">{{ v.category_name }}</span>
+    <h1>{{ v.business_name }}</h1>
+    <p class="muted">{{ v.city }} · {{ icon('star-fill', 14, 'inline-star') }} {{ v.rating_average }} · ₪{{ '%0.0f'|format(v.price_min) }}–₪{{ '%0.0f'|format(v.price_max) }}</p>
+  </div>
+  <div class="row">
+    {% if is_fav %}
+      <form method="post" action="{{ url_for('favorites_remove', vendor_id=v.vendor_id) }}">
+        <button class="btn btn-ghost">{{ icon('heart-fill', 16) }} Remove favorite</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('favorites_add', vendor_id=v.vendor_id) }}">
+        <button class="btn btn-primary">{{ icon('heart', 16) }} Add to favorites</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('selected_vendors_add', vendor_id=v.vendor_id) }}">
+      <button class="btn btn-ghost">{{ icon('star', 16) }} Select vendor</button>
+    </form>
+  </div>
+</header>
+
+{% if photos %}
+<div class="photo-grid">
+  {% for p in photos %}<img src="{{ p.photo_url }}" alt="{{ p.caption }}">{% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>About</h3>
+    <p>{{ v.description }}</p>
+  </div>
+  <div class="card">
+    <h3>Contact</h3>
+    <ul class="list contact-list">
+      {% if v.phone %}<li>{{ icon('phone', 16) }} {{ v.phone }}</li>{% endif %}
+      {% if v.email %}<li>{{ icon('mail', 16) }} {{ v.email }}</li>{% endif %}
+      {% if v.website %}<li>{{ icon('globe', 16) }} <a href="{{ v.website }}" target="_blank" rel="noopener">{{ v.website }}</a></li>{% endif %}
+      {% if v.instagram_url %}<li>{{ icon('instagram', 16) }} <a href="{{ v.instagram_url }}" target="_blank" rel="noopener">Instagram</a></li>{% endif %}
+      {% if v.address %}<li>{{ icon('pin', 16) }} {{ v.address }}</li>{% endif %}
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Reviews ({{ reviews|length }})</h3>
+  {% for r in reviews %}
+    <div class="review">
+      <strong>{{ r.full_name }}</strong>
+      <span class="muted"> · {{ icon('star-fill', 12, 'inline-star') }} {{ r.rating }} · {{ r.created_at }}</span>
+      <p>{{ r.review_text }}</p>
+    </div>
+  {% else %}
+    <p class="muted">No reviews yet — <a href="{{ url_for('reviews') }}">leave the first one</a>.</p>
+  {% endfor %}
+</div>
+
+{% endblock %}

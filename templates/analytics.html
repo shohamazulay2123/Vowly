@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="page-header">
+  <h1>Analytics</h1>
+  <p class="muted">Real SQL with JOIN, GROUP BY, HAVING, COUNT, AVG, SUM, ORDER BY.</p>
+</header>
+
+<section class="grid grid-4">
+  <div class="card kpi"><span class="kpi-label">Users</span><span class="kpi-value">{{ totals.users }}</span></div>
+  <div class="card kpi"><span class="kpi-label">Weddings</span><span class="kpi-value">{{ totals.weddings }}</span></div>
+  <div class="card kpi"><span class="kpi-label">Vendors</span><span class="kpi-value">{{ totals.vendors }}</span></div>
+  <div class="card kpi"><span class="kpi-label">Reviews</span><span class="kpi-value">{{ totals.reviews }}</span></div>
+</section>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Vendors per category</h3>
+    <table class="table">
+      <thead><tr><th>Category</th><th>Vendors</th></tr></thead>
+      <tbody>
+        {% for r in vendors_by_cat %}
+          <tr><td>{{ r.category_name }}</td><td>{{ r.total_vendors }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Average rating per category (JOIN + AVG + GROUP BY)</h3>
+    <table class="table">
+      <thead><tr><th>Category</th><th>Avg rating</th><th>Reviews</th></tr></thead>
+      <tbody>
+        {% for r in avg_rating_by_cat %}
+          <tr><td>{{ r.category_name }}</td><td>{{ r.average_rating }}</td><td>{{ r.reviews }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Most liked vendors</h3>
+    <table class="table">
+      <thead><tr><th>Vendor</th><th>Likes</th></tr></thead>
+      <tbody>
+        {% for r in most_liked %}<tr><td>{{ r.business_name }}</td><td>{{ r.total_likes }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Most skipped vendors</h3>
+    <table class="table">
+      <thead><tr><th>Vendor</th><th>Skips</th></tr></thead>
+      <tbody>
+        {% for r in most_skipped %}<tr><td>{{ r.business_name }}</td><td>{{ r.total_skips }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Most popular categories (by swipe interactions)</h3>
+    <table class="table">
+      <thead><tr><th>Category</th><th>Interactions</th></tr></thead>
+      <tbody>
+        {% for r in popular_categories %}<tr><td>{{ r.category_name }}</td><td>{{ r.interactions }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Top cities by vendor count</h3>
+    <table class="table">
+      <thead><tr><th>City</th><th>Vendors</th></tr></thead>
+      <tbody>
+        {% for r in top_cities %}<tr><td>{{ r.city }}</td><td>{{ r.vendor_count }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Checklist progress per wedding (JOIN + COUNT + SUM CASE)</h3>
+    <table class="table">
+      <thead><tr><th>Couple</th><th>Total</th><th>Completed</th></tr></thead>
+      <tbody>
+        {% for r in checklist_progress %}
+          <tr><td>{{ r.full_name }}</td><td>{{ r.total_items }}</td><td>{{ r.completed_items }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Budget estimated vs actual (SUM + GROUP BY)</h3>
+    <table class="table">
+      <thead><tr><th>Category</th><th>Estimated</th><th>Actual</th></tr></thead>
+      <tbody>
+        {% for r in budget_by_cat %}
+          <tr>
+            <td>{{ r.category_name }}</td>
+            <td>₪{{ '%0.0f'|format(r.estimated_total or 0) }}</td>
+            <td>₪{{ '%0.0f'|format(r.actual_total or 0) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Elite vendors (HAVING AVG(rating) ≥ 4.5)</h3>
+    <table class="table">
+      <thead><tr><th>Vendor</th><th>Category</th><th>Avg rating</th><th>Reviews</th></tr></thead>
+      <tbody>
+        {% for r in elite_vendors %}
+          <tr><td>{{ r.business_name }}</td><td>{{ r.category_name }}</td>
+              <td>{{ r.avg_rating }}</td><td>{{ r.reviews }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

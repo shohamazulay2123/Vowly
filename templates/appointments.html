@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="page-header">
+  <h1>Appointments</h1>
+</header>
+
+<div class="card">
+  <h3>Schedule new</h3>
+  <form method="post" class="form form-inline">
+    <select name="vendor_id" required>
+      <option value="">Select vendor…</option>
+      {% for v in vendors %}
+        <option value="{{ v.vendor_id }}">{{ v.business_name }} ({{ v.category_name }})</option>
+      {% endfor %}
+    </select>
+    <input type="datetime-local" name="appointment_date" required>
+    <input name="location" placeholder="Location">
+    <input name="notes" placeholder="Notes">
+    <button class="btn btn-primary">Schedule</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table class="table">
+    <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Location</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for a in rows %}
+        <tr>
+          <td>{{ a.appointment_date }}</td>
+          <td>{{ a.business_name }}</td>
+          <td><span class="badge">{{ a.category_name }}</span></td>
+          <td>{{ a.location or '' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('appointments_status', aid=a.appointment_id) }}" class="form-inline">
+              <select name="status" onchange="this.form.submit()">
+                {% for s in ['Scheduled','Completed','Cancelled'] %}
+                  <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">No appointments yet.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

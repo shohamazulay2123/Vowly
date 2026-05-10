@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block body_class %}auth-body{% endblock %}
+{% block hide_chrome %}1{% endblock %}
+
+{% block content %}
+<div class="auth-split">
+
+  <!-- Left: dynamic image -->
+  <aside class="auth-art">
+    <div class="auth-art-bg" aria-hidden="true"></div>
+    <div class="auth-art-shapes" aria-hidden="true">
+      <span class="orb orb-1"></span>
+      <span class="orb orb-2"></span>
+      <span class="orb orb-3"></span>
+      <span class="orb orb-4"></span>
+      <span class="petal petal-1">{{ icon('petal', 24) }}</span>
+      <span class="petal petal-2">{{ icon('petal', 22) }}</span>
+      <span class="petal petal-3">{{ icon('sparkle', 22) }}</span>
+      <span class="petal petal-4">{{ icon('heart-fill', 20) }}</span>
+      <span class="petal petal-5">{{ icon('petal', 26) }}</span>
+      <span class="petal petal-6">{{ icon('heart-fill', 18) }}</span>
+    </div>
+    <div class="auth-art-overlay">
+      <h1>Every <em>“I do”</em><br>starts with a plan.</h1>
+    </div>
+  </aside>
+
+  <!-- Right: auth panel -->
+  <section class="auth-panel">
+    <div class="auth-card-modern">
+      <a href="{{ url_for('index') }}" class="auth-brand">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Vowly">
+      </a>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for cat, msg in messages %}
+              <div class="flash flash-{{ cat }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="auth-tabs" id="auth-tabs" data-active="{% if mode == 'register' %}register{% else %}login{% endif %}">
+        <a href="{{ url_for('index', mode='login') }}"
+           data-pane="login"
+           class="auth-tab {% if mode != 'register' %}auth-tab-active{% endif %}">Log in</a>
+        <a href="{{ url_for('index', mode='register') }}"
+           data-pane="register"
+           class="auth-tab {% if mode == 'register' %}auth-tab-active{% endif %}">Sign up</a>
+      </div>
+
+      {# ---------- Login pane ---------- #}
+      <div class="auth-pane {% if mode != 'register' %}is-active{% endif %}" id="pane-login" data-pane="login">
+        <h2>Welcome back</h2>
+        <p class="muted">Log in to keep planning your big day.</p>
+        <form method="post" action="{{ url_for('index') }}" class="form">
+          <input type="hidden" name="action" value="login">
+          <label>Email <input type="email" name="email" required autocomplete="email"></label>
+          <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
+          <button class="btn btn-primary btn-block" type="submit">Log in</button>
+        </form>
+        <p class="muted center">New to Vowly?
+          <a href="{{ url_for('index', mode='register') }}" data-pane-link="register">Create an account</a></p>
+      </div>
+
+      {# ---------- Register pane ---------- #}
+      <div class="auth-pane {% if mode == 'register' %}is-active{% endif %}" id="pane-register" data-pane="register">
+        <h2>Create your account</h2>
+        <p class="muted">Start planning your wedding in minutes.</p>
+        <form method="post" action="{{ url_for('index') }}" class="form" id="register-form">
+          <input type="hidden" name="action" value="register">
+          <label>Full name <input name="full_name" autocomplete="name"></label>
+          <label>Email <input type="email" name="email" autocomplete="email"></label>
+          <label>Password <input type="password" name="password" minlength="6" autocomplete="new-password"></label>
+          <div class="form-row">
+            <label>City
+              <select name="city">
+                <option value="" disabled selected>Select city…</option>
+                <option>Acre</option>
+                <option>Afula</option>
+                <option>Arad</option>
+                <option>Ariel</option>
+                <option>Ashdod</option>
+                <option>Ashkelon</option>
+                <option>Bat Yam</option>
+                <option>Beer Sheva</option>
+                <option>Beit Shean</option>
+                <option>Beit Shemesh</option>
+                <option>Bnei Brak</option>
+                <option>Dimona</option>
+                <option>Eilat</option>
+                <option>Gedera</option>
+                <option>Givatayim</option>
+                <option>Hadera</option>
+                <option>Haifa</option>
+                <option>Herzliya</option>
+                <option>Hod HaSharon</option>
+                <option>Holon</option>
+                <option>Jerusalem</option>
+                <option>Kfar Saba</option>
+                <option>Kiryat Ata</option>
+                <option>Kiryat Bialik</option>
+                <option>Kiryat Gat</option>
+                <option>Kiryat Malachi</option>
+                <option>Kiryat Motzkin</option>
+                <option>Kiryat Ono</option>
+                <option>Kiryat Shmona</option>
+                <option>Kiryat Yam</option>
+                <option>Lod</option>
+                <option>Ma'alot-Tarshiha</option>
+                <option>Mitzpe Ramon</option>
+                <option>Modi'in</option>
+                <option>Nahariya</option>
+                <option>Nazareth</option>
+                <option>Nes Ziona</option>
+                <option>Nesher</option>
+                <option>Netanya</option>
+                <option>Netivot</option>
+                <option>Or Akiva</option>
+                <option>Or Yehuda</option>
+                <option>Petah Tikva</option>
+                <option>Ra'anana</option>
+                <option>Ramat Gan</option>
+                <option>Ramat HaSharon</option>
+                <option>Ramla</option>
+                <option>Rehovot</option>
+                <option>Rishon LeZion</option>
+                <option>Rosh HaAyin</option>
+                <option>Safed</option>
+                <option>Sderot</option>
+                <option>Tel Aviv</option>
+                <option>Tiberias</option>
+                <option>Tirat Carmel</option>
+                <option>Yavne</option>
+                <option>Yehud</option>
+                <option>Yokneam</option>
+              </select>
+            </label>
+            <label>Phone <input name="phone" autocomplete="tel"></label>
+          </div>
+
+          <label>I am the
+            <select name="role" id="role-select">
+              <option value="" disabled selected>Select one…</option>
+              <option value="Bride">Bride</option>
+              <option value="Groom">Groom</option>
+            </select>
+          </label>
+
+          <fieldset class="partner-fields" id="partner-fields" hidden>
+            <legend>Your partner's details</legend>
+            <label>Partner's name
+              <input name="partner_name" autocomplete="name">
+            </label>
+            <div class="form-row">
+              <label>Partner's email
+                <input type="email" name="partner_email" autocomplete="email">
+              </label>
+              <label>Partner's phone
+                <input name="partner_phone" autocomplete="tel">
+              </label>
+            </div>
+          </fieldset>
+
+          <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        </form>
+        <p class="muted center">Already have an account?
+          <a href="{{ url_for('index', mode='login') }}" data-pane-link="login">Log in</a></p>
+      </div>
+
+      <script>
+        (function () {
+          var tabs    = document.querySelectorAll('#auth-tabs .auth-tab');
+          var tabsBar = document.getElementById('auth-tabs');
+          var panes   = document.querySelectorAll('.auth-pane');
+          var roleSel = document.getElementById('role-select');
+          var fs      = document.getElementById('partner-fields');
+          var regForm = document.getElementById('register-form');
+
+          function setRequired(form, on) {
+            if (!form) return;
+            var fields = form.querySelectorAll('input, select');
+            fields.forEach(function (el) {
+              if (el.type === 'hidden') return;
+              if (on) {
+                if (el.dataset.required === '1') el.setAttribute('required', 'required');
+              } else {
+                if (el.hasAttribute('required')) {
+                  el.dataset.required = '1';
+                  el.removeAttribute('required');
+                }
+              }
+            });
+          }
+          // mark which fields were originally required so we can restore them
+          document.querySelectorAll('.auth-pane form').forEach(function (f) {
+            f.querySelectorAll('[required]').forEach(function (el) { el.dataset.required = '1'; });
+          });
+
+          function syncPartner() {
+            if (!roleSel || !fs) return;
+            var needsPartner = roleSel.value === 'Bride' || roleSel.value === 'Groom';
+            fs.hidden = !needsPartner;
+            fs.querySelectorAll('input').forEach(function (i) {
+              if (needsPartner) {
+                i.dataset.required = '1';
+                if (regForm && regForm.classList.contains('is-active-form')) {
+                  i.setAttribute('required', 'required');
+                }
+              } else {
+                i.removeAttribute('required');
+                i.value = '';
+                delete i.dataset.required;
+              }
+            });
+          }
+          if (roleSel) roleSel.addEventListener('change', syncPartner);
+
+          function activate(mode) {
+            if (!tabsBar) return;
+            tabsBar.dataset.active = mode;
+            tabs.forEach(function (t) {
+              t.classList.toggle('auth-tab-active', t.dataset.pane === mode);
+            });
+            panes.forEach(function (p) {
+              var isActive = p.dataset.pane === mode;
+              p.classList.toggle('is-active', isActive);
+              var form = p.querySelector('form');
+              if (form) {
+                form.classList.toggle('is-active-form', isActive);
+                setRequired(form, isActive);
+              }
+            });
+            // re-evaluate partner field requireds for current mode
+            syncPartner();
+            // update URL without reload
+            try {
+              var url = new URL(window.location.href);
+              url.searchParams.set('mode', mode);
+              window.history.replaceState({}, '', url);
+            } catch (e) {}
+          }
+
+          tabs.forEach(function (t) {
+            t.addEventListener('click', function (e) {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+              e.preventDefault();
+              activate(t.dataset.pane);
+            });
+          });
+          document.querySelectorAll('[data-pane-link]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+              e.preventDefault();
+              activate(a.dataset.paneLink);
+            });
+          });
+
+          // initial state: ensure inactive pane's fields aren't required
+          var initial = tabsBar ? tabsBar.dataset.active : 'login';
+          activate(initial);
+        })();
+      </script>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

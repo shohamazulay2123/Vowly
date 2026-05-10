@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card form-card">
+  <h2>{{ 'Edit' if w else 'Create' }} your wedding profile</h2>
+  <form method="post" class="form">
+    <label>Partner's name
+      <input name="partner_name" value="{{ w.partner_name if w else '' }}">
+    </label>
+    <label>Wedding date
+      <input type="date" name="wedding_date" value="{{ w.wedding_date if w else '' }}">
+    </label>
+    <label>Estimated guests
+      <input type="number" name="estimated_guests" min="1" value="{{ w.estimated_guests if w else '' }}">
+    </label>
+    <label>Total budget (₪)
+      <input type="number" name="budget" min="0" step="500" value="{{ w.budget if w else '' }}">
+    </label>
+    <label>City
+      <input name="city" value="{{ w.city if w else '' }}">
+    </label>
+    <label>Venue type preference
+      <select name="venue_type_preference">
+        {% set vp = w.venue_type_preference if w else '' %}
+        <option value="">— choose —</option>
+        {% for opt in ['Garden','Hall','Beach','Loft','Vineyard','Rooftop'] %}
+          <option value="{{ opt }}" {% if vp == opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">{{ 'Save changes' if w else 'Create profile' }}</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Welcome · Vowly{% endblock %}
+
+{% block content %}
+<header class="page-header onboarding-header">
+  <div>
+    <h1>Welcome to Vowly{% if user %}, {{ user.full_name.split(' ')[0] }}{% endif %} <span class="inline-icon">{{ icon('rings', 24) }}</span></h1>
+    <p class="muted">
+      What would you like to start with? Pick the suppliers that are top of mind —
+      we'll mark them as <em>In progress</em> and you can manage everything else from your checklist.
+    </p>
+    {% if role %}
+      <p class="muted small">Showing suppliers relevant to: <strong>{{ role }}</strong>.</p>
+    {% endif %}
+  </div>
+</header>
+
+<form method="post" action="{{ url_for('onboarding') }}" class="onboarding-form">
+  {% for category, items in grouped_suppliers.items() %}
+    <section class="card category-card">
+      <header class="category-card-header">
+        <h2>{{ category }}</h2>
+        <span class="muted small">{{ items|length }} suppliers</span>
+      </header>
+
+      <div class="supplier-grid">
+        {% for s in items %}
+          <label class="supplier-pick" for="pick-{{ s.code }}">
+            <input type="checkbox"
+                   id="pick-{{ s.code }}"
+                   name="start_with"
+                   value="{{ s.code }}"
+                   {% if state.get(s.code) and state.get(s.code).status == 'In progress' %}checked{% endif %}>
+            <div class="supplier-pick-body">
+              <div class="supplier-pick-title">
+                <span class="check"></span>
+                <strong>{{ s.name }}</strong>
+              </div>
+              <p class="muted small">{{ s.description }}</p>
+            </div>
+          </label>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+
+  <div class="onboarding-actions">
+    <a class="btn btn-ghost" href="{{ url_for('checklist') }}">Skip — see full checklist</a>
+    <button class="btn btn-primary btn-large" type="submit">Start planning</button>
+  </div>
+</form>
+{% endblock %}

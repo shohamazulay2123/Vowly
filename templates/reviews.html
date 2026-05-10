@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block content %}
+
+<header class="page-header">
+  <h1>Reviews</h1>
+</header>
+
+<div class="card">
+  <h3>Leave a review</h3>
+  <form method="post" class="form form-inline">
+    <select name="vendor_id" required>
+      <option value="">Select vendor…</option>
+      {% for v in vendors %}<option value="{{ v.vendor_id }}">{{ v.business_name }}</option>{% endfor %}
+    </select>
+    <select name="rating" required>
+      {% for n in [5,4,3,2,1] %}<option value="{{ n }}">{{ n }} star{{ '' if n == 1 else 's' }}</option>{% endfor %}
+    </select>
+    <input name="review_text" placeholder="Tell other couples what you thought" style="flex:1; min-width:240px;">
+    <button class="btn btn-primary">Post review</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Latest reviews</h3>
+  {% for r in rows %}
+    <div class="review">
+      <strong>{{ r.business_name }}</strong>
+      <span class="muted"> · {{ icon('star-fill', 12, 'inline-star') }} {{ r.rating }} · {{ r.full_name }} · {{ r.created_at }}</span>
+      <p>{{ r.review_text }}</p>
+    </div>
+  {% else %}
+    <p class="muted">No reviews yet.</p>
+  {% endfor %}
+</div>
+
+{% endblock %}

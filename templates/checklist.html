@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, supplier_icon %}
+{% block title %}Your wedding · Vowly{% endblock %}
+
+{% block content %}
+
+{# ============================================================
+   HERO  — greeting, countdown, progress ring, KPI tiles
+   ============================================================ #}
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-left">
+    <p class="hero-eyebrow">Welcome back</p>
+    <h1 id="hero-title" class="hero-title">
+      Hi {{ (user.full_name or 'there').split(' ')[0] }}{% if partner_name %}
+        <span class="hero-amp">&amp;</span> {{ partner_name.split(' ')[0] }}
+      {% endif %} <span class="hero-emoji" aria-hidden="true">{{ icon('rings', 28) }}</span>
+    </h1>
+
+    {% if days_until_wedding is not none and days_until_wedding >= 0 %}
+      <p class="hero-countdown">
+        <strong>{{ days_until_wedding }}</strong>
+        day{{ '' if days_until_wedding == 1 else 's' }} until
+        <span class="muted">{{ wedding_date_display }}</span>
+      </p>
+    {% elif days_until_wedding is not none and days_until_wedding < 0 %}
+      <p class="hero-countdown muted">Mazel tov — your wedding has passed {{ icon('heart-fill', 16) }}</p>
+    {% else %}
+      <p class="hero-countdown">
+        <a class="link" href="{{ url_for('wedding_profile') }}">Set your wedding date →</a>
+      </p>
+    {% endif %}
+
+    <div class="kpi-row" role="group" aria-label="Quick filters">
+      <button type="button" class="kpi-tile" data-kpi-filter="Booked">
+        <span class="kpi-dot kpi-dot-booked"></span>
+        <span class="kpi-num" id="kpi-booked">{{ overall.booked }}</span>
+        <span class="kpi-cap">Booked</span>
+      </button>
+      <button type="button" class="kpi-tile" data-kpi-filter="In progress">
+        <span class="kpi-dot kpi-dot-progress"></span>
+        <span class="kpi-num" id="kpi-progress">{{ overall.in_progress }}</span>
+        <span class="kpi-cap">In progress</span>
+      </button>
+      <button type="button" class="kpi-tile" data-kpi-filter="Not started">
+        <span class="kpi-dot kpi-dot-todo"></span>
+        <span class="kpi-num" id="kpi-todo">{{ overall.total - overall.booked - overall.in_progress }}</span>
+        <span class="kpi-cap">To do</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="ring-wrap" data-pct="{{ overall.pct }}" aria-label="Overall progress">
+      <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="ring-track" cx="60" cy="60" r="52" />
+        <circle class="ring-fill"  cx="60" cy="60" r="52"
+                stroke-dasharray="326.7"
+                stroke-dashoffset="326.7" />
+      </svg>
+      <div class="ring-center">
+        <span class="ring-num"  id="ring-num">0</span><span class="ring-pct">%</span>
+        <span class="ring-cap" id="ring-cap">{{ overall.booked }} / {{ overall.total }} booked</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ============================================================
+   NEXT UP — smart suggestions strip
+   ============================================================ #}
+{% if next_up %}
+<section class="next-up" aria-label="Suggested next steps">
+  <header class="next-up-head">
+    <h2>Next up <span class="muted small">· suggested for you</span></h2>
+  </header>
+  <div class="next-up-row">
+    {% for s in next_up %}
+      {% set cat_id = code_to_category_id.get(s.code) %}
+      <a class="next-up-card"
+         href="{% if cat_id %}{{ url_for('swipe', category_id=cat_id) }}{% else %}#sup-{{ s.code }}{% endif %}">
+        <span class="next-up-icon">{{ supplier_icon(s.code, 22) }}</span>
+        <div>
+          <strong>{{ s.name }}</strong>
+          <span class="muted small">{{ s.category }}</span>
+        </div>
+        <span class="next-up-arrow" aria-hidden="true">{{ icon('arrow-right', 18) }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ============================================================
+   LIKED VENDORS STRIP — horizontal scroll of liked vendors
+   ============================================================ #}
+{% if liked_vendors %}
+<section class="liked-strip" aria-labelledby="liked-strip-title">
+  <div class="liked-strip-head">
+    <h2 id="liked-strip-title" class="liked-strip-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--rose)" aria-hidden="true" style="vertical-align:-2px;flex-shrink:0"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      Liked vendors <span class="muted small">· {{ liked_vendors|length }}</span>
+    </h2>
+    <a href="{{ url_for('favorites') }}" class="link small">View all →</a>
+  </div>
+  <div class="liked-scroll" id="liked-scroll-checklist">
+    {% for v in liked_vendors %}
+    <a class="liked-card" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}"
+       data-vendor-id="{{ v.vendor_id }}">
+      <div class="liked-card-img"
+           style="background-image:url('{{ v.photo_url or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/400/300') }}')">
+      </div>
+      <div class="liked-card-body">
+        <span class="liked-card-name">{{ v.business_name }}</span>
+        <span class="liked-card-cat muted small">{{ v.category_name }}</span>
+        {% if v.city %}<span class="liked-card-city muted small">{{ v.city }}</span>{% endif %}
+        {% if v.rating_average %}
+          <span class="liked-card-rating">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--gold)" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            {{ '%.1f'|format(v.rating_average) }}
+          </span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ============================================================
+   STICKY COMMAND BAR — search + status pills
+   ============================================================ #}
+<div class="cmd-bar" id="cmd-bar">
+  <label class="cmd-search">
+    <span class="cmd-search-icon" aria-hidden="true">{{ icon('search', 18) }}</span>
+    <input type="search" id="cmd-search-input"
+           placeholder="Find a supplier…" autocomplete="off">
+  </label>
+  <div class="cmd-pills" role="radiogroup" aria-label="Filter by status">
+    <button type="button" class="pill pill-active" data-status="all">All</button>
+    <button type="button" class="pill"             data-status="Not started">To do</button>
+    <button type="button" class="pill"             data-status="In progress">In progress</button>
+    <button type="button" class="pill"             data-status="Booked">Booked</button>
+  </div>
+</div>
+
+{# ============================================================
+   CATEGORIES — accordions with mini-rings + supplier cards
+   ============================================================ #}
+{% for category, items in grouped.items() %}
+  {% set cp = category_progress[category] %}
+  <section class="acc-section{% if loop.first %} is-open{% endif %}"
+           data-category="{{ category }}">
+    <button type="button" class="acc-head" aria-expanded="{{ 'true' if loop.first else 'false' }}">
+      <span class="mini-ring" data-pct="{{ cp.pct }}" aria-hidden="true">
+        <svg viewBox="0 0 36 36">
+          <circle class="mr-track" cx="18" cy="18" r="15" />
+          <circle class="mr-fill"  cx="18" cy="18" r="15"
+                  stroke-dasharray="94.2"
+                  stroke-dashoffset="{{ 94.2 - (94.2 * cp.pct / 100) }}" />
+        </svg>
+        <span class="mr-num">{{ cp.pct }}%</span>
+      </span>
+      <span class="acc-title">
+        <span class="acc-name">{{ category }}</span>
+        <span class="acc-meta muted small">
+          {{ cp.booked }}/{{ cp.total }} booked · {{ cp.in_progress }} in progress
+        </span>
+      </span>
+      <span class="acc-chevron" aria-hidden="true">{{ icon('chevron-right', 22) }}</span>
+    </button>
+
+    <div class="acc-body">
+      <div class="supplier-grid">
+        {% for s in items %}
+          {% set cat_id = code_to_category_id.get(s.code) %}
+          {% set status_class = 'status-' ~ (s.status|replace(' ','-')|lower) %}
+          {% if cat_id %}
+            <a id="sup-{{ s.code }}"
+               class="supplier-card supplier-link {{ status_class }}"
+               href="{{ url_for('swipe', category_id=cat_id, supplier=s.code) }}"
+               data-category="{{ category }}"
+               data-status="{{ s.status }}"
+               data-name="{{ s.name|lower }}"
+               data-supplier-code="{{ s.code }}">
+              <span class="supplier-icon" aria-hidden="true">{{ supplier_icon(s.code, 22) }}</span>
+              <span class="supplier-id">
+                <span class="supplier-name">{{ s.name }}</span>
+                <span class="status-pill status-pill-{{ s.status|replace(' ','-')|lower }}">
+                  <span class="dot dot-status" aria-hidden="true"></span>
+                  {{ s.status }}
+                </span>
+              </span>
+              <span class="supplier-trail" aria-hidden="true">{{ icon('chevron-right', 20) }}</span>
+            </a>
+          {% else %}
+            <div id="sup-{{ s.code }}"
+                 class="supplier-card supplier-card-static {{ status_class }}"
+                 data-category="{{ category }}"
+                 data-status="{{ s.status }}"
+                 data-name="{{ s.name|lower }}"
+                 data-supplier-code="{{ s.code }}">
+              <span class="supplier-icon" aria-hidden="true">{{ supplier_icon(s.code, 22) }}</span>
+              <span class="supplier-id">
+                <span class="supplier-name">{{ s.name }}</span>
+                <span class="status-pill status-pill-{{ s.status|replace(' ','-')|lower }}">
+                  <span class="dot dot-status" aria-hidden="true"></span>
+                  {{ s.status }}
+                </span>
+              </span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endfor %}
+
+<p class="muted center small empty-msg" hidden>No suppliers match these filters.</p>
+
+{# Toast region #}
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span class="toast-text">Saved</span></div>
+
+{% endblock %}

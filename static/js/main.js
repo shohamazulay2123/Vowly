@@ -213,9 +213,127 @@ function initSwipeDeck() {
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
     if (e.key === "ArrowLeft")  commit(topCard(), "left");
     if (e.key === "ArrowRight") commit(topCard(), "right");
+    if (e.key === "Escape") closeSheet();
   });
 
   refreshDepths();
+  initVendorSheet();
+}
+
+/* ---------------------------------------------------------------------------
+ * Vendor profile sheet — opens on tap (not drag) of a swipe card
+ * ------------------------------------------------------------------------- */
+function initVendorSheet() {
+  const backdrop  = document.getElementById("vsheet-backdrop");
+  const sheet     = document.getElementById("vsheet");
+  if (!backdrop || !sheet) return;
+
+  const photo     = document.getElementById("vsheet-photo");
+  const badge     = document.getElementById("vsheet-badge");
+  const rating    = document.getElementById("vsheet-rating");
+  const name      = document.getElementById("vsheet-name");
+  const city      = document.getElementById("vsheet-city");
+  const desc      = document.getElementById("vsheet-desc");
+  const details   = document.getElementById("vsheet-details");
+  const link      = document.getElementById("vsheet-profile-link");
+  const skipBtn2  = document.getElementById("vsheet-skip");
+  const likeBtn2  = document.getElementById("vsheet-like");
+
+  let currentCard = null;
+
+  function openSheet(card) {
+    currentCard = card;
+    const d = card.dataset;
+
+    photo.style.backgroundImage = d.vendorPhoto ? `url('${d.vendorPhoto}')` : "";
+    badge.textContent  = d.vendorCat  || "";
+    name.textContent   = d.vendorName || "";
+    city.textContent   = d.vendorCity ? "📍 " + d.vendorCity : "";
+    desc.textContent   = d.vendorDesc || "";
+    link.href          = d.vendorUrl  || "#";
+
+    // Rating
+    if (d.vendorRating) {
+      rating.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--gold)" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> ${d.vendorRating}`;
+    } else {
+      rating.textContent = "";
+    }
+
+    // Detail chips
+    details.innerHTML = "";
+    if (d.vendorPrice) {
+      const ch = document.createElement("span");
+      ch.className = "vsheet-detail-chip";
+      ch.textContent = d.vendorPrice;
+      details.appendChild(ch);
+    }
+    if (d.vendorPhone) {
+      const ch = document.createElement("a");
+      ch.className = "vsheet-detail-chip";
+      ch.href = "tel:" + d.vendorPhone;
+      ch.textContent = "📞 " + d.vendorPhone;
+      details.appendChild(ch);
+    }
+    if (d.vendorWebsite) {
+      const ch = document.createElement("a");
+      ch.className = "vsheet-detail-chip";
+      ch.href = d.vendorWebsite;
+      ch.target = "_blank";
+      ch.rel = "noopener noreferrer";
+      ch.textContent = "🌐 Website";
+      details.appendChild(ch);
+    }
+
+    backdrop.hidden = false;
+    sheet.hidden    = false;
+    requestAnimationFrame(() => {
+      backdrop.classList.add("is-open");
+      sheet.classList.add("is-open");
+    });
+    document.body.style.overflow = "hidden";
+    sheet.scrollTop = 0;
+  }
+
+  function closeSheet() {
+    backdrop.classList.remove("is-open");
+    sheet.classList.remove("is-open");
+    document.body.style.overflow = "";
+    sheet.addEventListener("transitionend", () => {
+      sheet.hidden    = true;
+      backdrop.hidden = true;
+      currentCard = null;
+    }, { once: true });
+  }
+  // expose so keyboard Escape works
+  window.closeSheet = closeSheet;
+
+  backdrop.addEventListener("click", closeSheet);
+  sheet.addEventListener("click", (e) => e.stopPropagation());
+
+  if (skipBtn2) skipBtn2.addEventListener("click", () => {
+    const card = currentCard;
+    closeSheet();
+    setTimeout(() => commit(card, "left"), 80);
+  });
+  if (likeBtn2) likeBtn2.addEventListener("click", () => {
+    const card = currentCard;
+    closeSheet();
+    setTimeout(() => commit(card, "right"), 80);
+  });
+
+  // Tap detection — use click event (browser suppresses it after a real drag)
+  const deck = document.getElementById("swipe-deck");
+  if (!deck) return;
+  deck.querySelectorAll(".swipe-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (!card.classList.contains("is-top")) return;
+      if (card.classList.contains("is-leaving")) return;
+      openSheet(card);
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(card); }
+    });
+  });
 }
 
 /* ---------------------------------------------------------------------------

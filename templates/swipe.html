@@ -75,7 +75,15 @@
                  data-vendor-rating="{{ '%.1f'|format(v.rating_average) if v.rating_average else '' }}"
                  data-vendor-photo="{{ photo_map.get(v.vendor_id) or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/800/600') }}"
                  data-vendor-url="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}"
-                 style="--depth: {{ loop.index0 }};">
+                 data-vendor-desc="{{ (v.description or '')|e }}"
+                 data-vendor-price="{{ ('₪%0.0f – ₪%0.0f'|format(v.price_min, v.price_max)) if v.price_min and v.price_max else '' }}"
+                 data-vendor-phone="{{ (v.phone or '')|e }}"
+                 data-vendor-website="{{ (v.website or '')|e }}"
+                 data-vendor-cat="{{ category.category_name|e }}"
+                 style="--depth: {{ loop.index0 }};"
+                 tabindex="0"
+                 role="button"
+                 aria-label="Tap to view {{ v.business_name }} profile">
           <div class="swipe-card-inner">
             <img class="swipe-card-img"
                  src="{{ photo_map.get(v.vendor_id) or 'https://picsum.photos/seed/' ~ v.vendor_id ~ '/800/600' }}"
@@ -152,4 +160,35 @@
     {% endfor %}
   </div>
 </section>
+
+{# ------------------------------------------------------------------ #}
+{#  Vendor profile sheet — populated by JS when a card is tapped       #}
+{# ------------------------------------------------------------------ #}
+<div class="vsheet-backdrop" id="vsheet-backdrop" hidden aria-hidden="true"></div>
+<aside class="vsheet" id="vsheet" role="dialog" aria-modal="true" aria-labelledby="vsheet-name" hidden>
+  <div class="vsheet-handle"></div>
+
+  <div class="vsheet-photo" id="vsheet-photo"></div>
+
+  <div class="vsheet-body">
+    <div class="vsheet-meta-top">
+      <span class="badge" id="vsheet-badge"></span>
+      <span class="vsheet-rating" id="vsheet-rating"></span>
+    </div>
+
+    <h2 class="vsheet-name" id="vsheet-name"></h2>
+
+    <p class="vsheet-city muted small" id="vsheet-city"></p>
+
+    <p class="vsheet-desc" id="vsheet-desc"></p>
+
+    <div class="vsheet-details" id="vsheet-details"></div>
+
+    <div class="vsheet-cta">
+      <button class="btn btn-ghost btn-large vsheet-skip" id="vsheet-skip">✕ Skip</button>
+      <button class="btn btn-primary btn-large vsheet-like" id="vsheet-like">♥ Like</button>
+      <a class="btn btn-ghost btn-sm vsheet-profile-link" id="vsheet-profile-link" target="_blank">Full profile →</a>
+    </div>
+  </div>
+</aside>
 {% endblock %}

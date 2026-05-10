@@ -1225,3 +1225,257 @@ a.supplier-card:hover { color: inherit; text-decoration: none; }
 }
 .liked-remove-btn { color: var(--muted); }
 .liked-remove-btn:hover { color: #c0392b; border-color: #c0392b; }
+
+/* ============================================================
+   Hamburger button (hidden on desktop)
+   ============================================================ */
+.nav-burger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center;
+  gap: 5px; width: 40px; height: 40px;
+  background: transparent; border: none; cursor: pointer;
+  padding: 6px; border-radius: 10px;
+  transition: background .15s;
+}
+.nav-burger:hover { background: var(--blush); }
+.nav-burger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--dark); border-radius: 2px;
+  transition: transform .3s cubic-bezier(.22,.61,.36,1), opacity .2s;
+}
+.nav-burger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-burger.is-open span:nth-child(2) { opacity: 0; }
+.nav-burger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ============================================================
+   Mobile — general layout (≤ 640 px)
+   ============================================================ */
+@media (max-width: 640px) {
+
+  /* --- Navbar & hamburger menu --- */
+  .nav-burger { display: flex; }
+
+  .nav-links {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--white);
+    box-shadow: 0 12px 30px rgba(45,27,34,.10);
+    flex-direction: column; align-items: stretch;
+    padding: 12px 16px 20px;
+    gap: 4px;
+    z-index: 49;
+    border-top: 1px solid #f1e4e8;
+  }
+  .nav-links.nav-open { display: flex; }
+  .nav-links a {
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 1rem; font-weight: 500;
+  }
+  .nav-links a:hover { background: var(--blush); }
+  .nav-links .nav-cta {
+    text-align: center; margin-top: 6px;
+    padding: 12px 16px; border-radius: 12px;
+  }
+  .nav-links .nav-liked-link { justify-content: flex-start; }
+  .navbar { padding: 12px 16px; position: relative; }
+
+  /* --- Container --- */
+  .container { margin: 16px auto; padding: 0 14px; }
+
+  /* --- Typography --- */
+  h1 { font-size: 1.9rem; }
+  h2 { font-size: 1.45rem; }
+  h3 { font-size: 1.15rem; }
+
+  /* --- Cards --- */
+  .card { padding: 16px; border-radius: 14px; }
+
+  /* --- Buttons --- */
+  .btn-large { padding: 12px 22px; font-size: .95rem; }
+
+  /* --- Page header --- */
+  .page-header { flex-direction: column; align-items: flex-start; }
+
+  /* --- Forms --- */
+  .form-row { grid-template-columns: 1fr; }
+
+  /* --- Tables — horizontal scroll --- */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table { min-width: 520px; }
+
+  /* --- Hero (checklist) --- */
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 22px 18px;
+    gap: 18px;
+    border-radius: 18px;
+  }
+  .hero-right { display: none; }
+  .hero-title { font-size: 1.6rem; }
+  .kpi-row { gap: 8px; }
+  .kpi-tile { padding: 10px 12px; }
+  .kpi-num { font-size: 1.3rem; }
+
+  /* --- Next-up cards --- */
+  .next-up-card { min-width: 200px; }
+
+  /* --- Command bar --- */
+  .cmd-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; }
+  .cmd-search { flex: 1 1 100%; }
+
+  /* --- Accordion / supplier cards --- */
+  .supplier-grid { grid-template-columns: 1fr; }
+  .acc-head { padding: 14px 16px; }
+  .acc-name { font-size: 1.15rem; }
+  .seg-opt { font-size: .78rem; padding: 7px 6px; }
+
+  /* --- Swipe deck --- */
+  .swipe-deck {
+    max-width: 100%;
+    aspect-ratio: 3 / 4.2;
+  }
+  .swipe-card-body h2 { font-size: 1.3rem; }
+  .swipe-desc { font-size: .88rem; -webkit-line-clamp: 2; }
+  .swipe-actions { gap: 10px; padding: 12px 0 4px; }
+  .swipe-actions .btn { padding: 10px 18px; font-size: .9rem; }
+  .swipe-filters { padding: 8px 0; gap: 8px; }
+
+  /* --- Vendor grid --- */
+  .vendor-grid { grid-template-columns: 1fr; }
+
+  /* --- Photo grid --- */
+  .photo-grid { grid-template-columns: 1fr 1fr; }
+  .photo-grid img { height: 130px; }
+
+  /* --- Liked strips --- */
+  .liked-card { flex: 0 0 140px; }
+  .liked-card-img { height: 90px; }
+  .liked-page-grid { grid-template-columns: 1fr; }
+  .liked-page-card-photo { height: 130px; }
+  .liked-page-actions { flex-direction: row; }
+
+  /* --- Auth split --- */
+  .auth-split { grid-template-columns: 1fr; }
+  .auth-art { min-height: 180px; padding: 28px 20px; }
+  .auth-art h1 { font-size: 1.8rem; }
+  .auth-art p, .auth-art-bullets { display: none; }
+  .auth-card-modern { padding: 24px 18px; border-radius: 18px; }
+  .auth-panel { padding: 20px 14px; }
+
+  /* --- Grids --- */
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr; }
+
+  /* --- Hero (landing) --- */
+  .hero-stats { gap: 18px; flex-wrap: wrap; }
+  .hero-stats strong { font-size: 1.5rem; }
+
+  /* --- Footer --- */
+  .footer { padding: 24px 16px; font-size: .85rem; }
+}
+
+/* ============================================================
+   Tablet tweaks (641 – 880 px)
+   ============================================================ */
+@media (min-width: 641px) and (max-width: 880px) {
+  .container { padding: 0 20px; }
+  .hero { padding: 26px 28px; }
+  .ring-wrap { width: 120px; height: 120px; }
+  .ring-num { font-size: 2rem; }
+  .swipe-deck { max-width: 380px; }
+  .liked-page-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .supplier-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+/* ============================================================
+   Vendor profile sheet (tap-to-expand bottom drawer on swipe)
+   ============================================================ */
+
+.vsheet-backdrop {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(45, 27, 34, .45);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.vsheet-backdrop.is-open { opacity: 1; }
+
+.vsheet {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 81;
+  background: var(--white);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 48px rgba(45,27,34,.22);
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform .38s cubic-bezier(.22,.61,.36,1);
+  -webkit-overflow-scrolling: touch;
+}
+.vsheet.is-open { transform: translateY(0); }
+
+.vsheet-handle {
+  width: 44px; height: 4px;
+  background: #e6d6da; border-radius: 2px;
+  margin: 14px auto 0;
+}
+
+.vsheet-photo {
+  width: 100%; height: 220px;
+  background: var(--blush) center/cover no-repeat;
+  margin-top: 14px;
+}
+
+.vsheet-body {
+  padding: 20px 22px 32px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.vsheet-meta-top {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+.vsheet-rating {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .85rem; font-weight: 600; color: var(--gold);
+}
+
+.vsheet-name { font-size: 1.7rem; margin: 4px 0 0; line-height: 1.1; }
+
+.vsheet-city { margin: 0; }
+
+.vsheet-desc {
+  color: var(--muted); font-size: .95rem; line-height: 1.55;
+  margin: 0;
+}
+
+.vsheet-details {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.vsheet-detail-chip {
+  background: var(--blush); color: var(--mauve);
+  padding: 5px 12px; border-radius: 999px; font-size: .82rem; font-weight: 500;
+}
+
+.vsheet-cta {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center;
+}
+.vsheet-cta .btn-large { flex: 1; text-align: center; justify-content: center; }
+.vsheet-skip { color: var(--rose-dark) !important; }
+.vsheet-profile-link { margin-left: auto; white-space: nowrap; }
+
+/* On desktop, render as a centred modal instead of bottom sheet */
+@media (min-width: 641px) {
+  .vsheet {
+    left: 50%; right: auto;
+    width: 480px;
+    transform: translateX(-50%) translateY(100%);
+    border-radius: 22px;
+    bottom: 40px;
+    max-height: 85vh;
+  }
+  .vsheet.is-open {
+    transform: translateX(-50%) translateY(0);
+  }
+  .vsheet-photo { height: 260px; }
+}

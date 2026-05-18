@@ -4,19 +4,124 @@
   <meta charset="UTF-8">
   <title>Vowly — ERD</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #FFF8F5; margin: 0; padding: 24px; }
-    h1 { color: #D96C75; font-size: 1.6rem; margin-bottom: 4px; }
-    p  { color: #7A6A70; margin-bottom: 24px; font-size: .9rem; }
-    .mermaid { background: #fff; border-radius: 16px; padding: 32px;
-               box-shadow: 0 4px 24px rgba(45,27,34,.08); }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #FFF8F5;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    /* Fullscreen viewport */
+    #viewport-20260518075840864 {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(circle at 20% 10%, #FFE6DE 0%, transparent 40%),
+        radial-gradient(circle at 80% 90%, #FCEEF5 0%, transparent 40%),
+        #FFF8F5;
+    }
+
+    /* Floating overlay header */
+    .erd-header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 4px 18px rgba(45,27,34,.10);
+    }
+    .erd-header h1 { color: #D96C75; font-size: 1.15rem; margin: 0; }
+    .erd-header p  { color: #7A6A70; margin: 2px 0 0; font-size: .78rem; }
+
+    /* Floating controls */
+    .erd-controls {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(8px);
+      padding: 6px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(45,27,34,.10);
+    }
+    .erd-controls button {
+      border: none;
+      background: #fff;
+      color: #D96C75;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: background .15s ease, transform .1s ease;
+    }
+    .erd-controls button:hover  { background: #FFE6DE; }
+    .erd-controls button:active { transform: scale(.96); }
+
+    /* Mermaid canvas occupies the entire viewport */
+    #mermaid-1779091120367 {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      cursor: grab;
+    }
+    #mermaid-1779091120367:active { cursor: grabbing; }
+    #mermaid-1779091120367 svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      display: block;
+    }
+
+    /* Status pill */
+    .erd-status {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(8px);
+      color: #7A6A70;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: .75rem;
+      box-shadow: 0 2px 10px rgba(45,27,34,.08);
+    }
   </style>
 </head>
 <body>
-  <h1>Vowly — Entity Relationship Diagram</h1>
-  <p>13 tables · raw SQLite · no ORM</p>
+  <div id="viewport-20260518075840864">
+    <div class="erd-header">
+      <h1>Vowly — Entity Relationship Diagram</h1>
+      <p>13 tables · raw SQLite · no ORM</p>
+    </div>
+    <div class="erd-controls">
+      <button id="erd-zoom-in" title="Zoom in">＋</button>
+      <button id="erd-zoom-out" title="Zoom out">−</button>
+      <button id="erd-fit" title="Fit to screen">⤢ Fit</button>
+      <button id="erd-reset" title="Reset view">↺ Reset</button>
+      <button id="erd-fullscreen" title="Toggle fullscreen">⛶ Fullscreen</button>
+    </div>
 
-  <div class="mermaid">
+    <div class="mermaid" id="mermaid-1779091120367">
 erDiagram
 
   USERS {
@@ -180,8 +285,76 @@ erDiagram
   VENDORS            ||--o{ SELECTED_VENDORS  : "selected as"
   VENDORS            ||--o{ VENDOR_REVIEWS    : "reviewed in"
   VENDORS            ||--o{ APPOINTMENTS      : "appears in"
+    </div>
+    <div class="erd-status" id="erd-status">Rendering…</div>
   </div>
 
-  <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        primaryColor: '#FFE6DE',
+        primaryTextColor: '#5A3742',
+        primaryBorderColor: '#D96C75',
+        lineColor: '#D96C75',
+        secondaryColor: '#FCEEF5',
+        tertiaryColor: '#FFF8F5',
+        fontFamily: 'Segoe UI, system-ui, sans-serif',
+        fontSize: '14px'
+      },
+      er: { useMaxWidth: false, layoutDirection: 'TB' }
+    });
+
+    const statusEl = document.getElementById('erd-status');
+    let panZoom = null;
+
+    async function renderERD() {
+      const container = document.getElementById('mermaid-1779091120367');
+      const source = container.textContent.trim();
+      try {
+        const { svg } = await mermaid.render('erd-svg-' + Date.now(), source);
+        container.innerHTML = svg;
+        const svgEl = container.querySelector('svg');
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+        panZoom = svgPanZoom(svgEl, {
+          zoomEnabled: true,
+          controlIconsEnabled: false,
+          fit: true,
+          center: true,
+          minZoom: 0.2,
+          maxZoom: 10,
+          contain: false
+        });
+
+        const refit = () => { panZoom.resize(); panZoom.fit(); panZoom.center(); };
+        window.addEventListener('resize', refit);
+        document.addEventListener('fullscreenchange', () => setTimeout(refit, 100));
+        setTimeout(refit, 50);
+
+        statusEl.textContent = 'Drag to pan · Scroll to zoom';
+        setTimeout(() => statusEl.style.opacity = '0.5', 2500);
+      } catch (err) {
+        statusEl.textContent = 'Render error: ' + err.message;
+        console.error(err);
+      }
+    }
+
+    document.getElementById('erd-zoom-in').onclick  = () => panZoom && panZoom.zoomIn();
+    document.getElementById('erd-zoom-out').onclick = () => panZoom && panZoom.zoomOut();
+    document.getElementById('erd-fit').onclick      = () => { if (panZoom){ panZoom.resize(); panZoom.fit(); panZoom.center(); } };
+    document.getElementById('erd-reset').onclick    = () => { if (panZoom){ panZoom.resetZoom(); panZoom.resetPan(); panZoom.fit(); panZoom.center(); } };
+    document.getElementById('erd-fullscreen').onclick = () => {
+      const el = document.getElementById('viewport-20260518075840864');
+      if (!document.fullscreenElement) el.requestFullscreen();
+      else document.exitFullscreen();
+    };
+
+    renderERD();
+  </script>
 </body>
 </html>

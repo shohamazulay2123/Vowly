@@ -1,0 +1,817 @@
+{% extends "base.html" %}
+{% block title %}Database Schema · Vowly{% endblock %}
+
+{% block content %}
+<style>
+  /* Bust out of the .container max-width so the ERD spans the full viewport width */
+  main.container:has(.erd-page) {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .erd-page {
+    padding: 18px 24px 24px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .erd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .erd-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: #c85d67;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .erd-header p { margin: 6px 0 0; color: #6f5d62; font-size: 0.93rem; }
+
+  .erd-shell {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 14px;
+    height: calc(100vh - 160px);
+    min-height: 560px;
+  }
+
+  .erd-sidebar {
+    border: 1px solid #ebdde1;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff, #fff8f9);
+    box-shadow: 0 4px 22px rgba(45, 27, 34, 0.08);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .erd-search {
+    width: 100%;
+    border: 1px solid #e7d4da;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    background: #fff;
+    color: #4b3940;
+  }
+
+  .erd-meta {
+    font-size: 0.8rem;
+    color: #725d64;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .erd-table-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    max-height: 60vh;
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  .erd-chip {
+    border: 1px solid #dfc6ce;
+    background: #fff;
+    color: #5f474f;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.74rem;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+
+  .erd-chip:hover,
+  .erd-chip.active {
+    background: #c85d67;
+    border-color: #c85d67;
+    color: #fff;
+  }
+
+  .erd-note {
+    margin-top: auto;
+    color: #7a6a70;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .erd-main {
+    border: 1px solid #ebdde1;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 22px rgba(45, 27, 34, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .erd-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #f1e7ea;
+    padding: 10px 12px;
+    background: #fff9fb;
+  }
+
+  .erd-btn {
+    border: 1px solid #e9d6db;
+    background: #fff;
+    color: #6b4c53;
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .erd-btn:hover { background: #fff1f5; }
+
+  .erd-canvas {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+    background:
+      radial-gradient(circle at 1px 1px, #f4dde3 1px, transparent 0) 0 0/24px 24px,
+      #fff;
+  }
+
+  .mermaid {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: block;
+  }
+  .mermaid svg {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: block;
+  }
+
+  .erd-status {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid #ead9de;
+    color: #6d555d;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    padding: 5px 8px;
+  }
+
+  .erd-focus-shape {
+    filter: drop-shadow(0 0 10px rgba(200, 93, 103, 0.4));
+    stroke: #c85d67 !important;
+    stroke-width: 2.5px !important;
+  }
+
+  /* Focused-flow overlay */
+  .erd-flow-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #fff8fa 0%, #fff 60%);
+    display: none;
+    flex-direction: column;
+    z-index: 5;
+    animation: erdFadeIn .25s ease;
+  }
+  .erd-flow-overlay.active { display: flex; }
+  @keyframes erdFadeIn { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
+
+  .erd-flow-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1e0e5;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(6px);
+  }
+  .erd-flow-title {
+    font-family: 'Cormorant Garamond', serif;
+    color: #c85d67;
+    font-size: 1.35rem;
+    margin: 0;
+    flex: 1;
+  }
+  .erd-flow-sub {
+    color: #7a6a70;
+    font-size: .8rem;
+  }
+  .erd-flow-back {
+    border: 1px solid #e9d6db;
+    background: #fff;
+    color: #c85d67;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 7px 13px;
+    cursor: pointer;
+    font-size: .82rem;
+  }
+  .erd-flow-back:hover { background: #ffe9ee; }
+
+  .erd-flow-canvas {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .erd-flow-canvas .mermaid {
+    width: 100%;
+    height: 100%;
+  }
+  .erd-flow-canvas svg {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Flow node theming */
+  .erd-flow-canvas .node.center rect,
+  .erd-flow-canvas .node.center polygon,
+  .erd-flow-canvas .node.center circle {
+    fill: #c85d67 !important;
+    stroke: #a8424c !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 6px 18px rgba(200,93,103,.35));
+  }
+  .erd-flow-canvas .node.center .nodeLabel { color: #fff !important; font-weight: 700; }
+  .erd-flow-canvas .node.parent rect { fill: #fff1f4 !important; stroke: #c85d67 !important; }
+  .erd-flow-canvas .node.child rect  { fill: #f3ecff !important; stroke: #8b6dc4 !important; }
+  .erd-flow-canvas .edgeLabel { background: #fff !important; padding: 2px 6px; border-radius: 6px; font-size: .78rem; color: #5d4750; }
+  .erd-flow-canvas .edgePath path { stroke-width: 2px !important; }
+
+  .erd-main:fullscreen { background: #fff; border-radius: 0; }
+  .erd-main:fullscreen .erd-canvas { height: calc(100vh - 56px); }
+
+  @media (max-width: 1024px) {
+    .erd-shell { grid-template-columns: 1fr; height: auto; }
+    .erd-table-list { max-height: none; }
+    .erd-canvas { height: 70vh; }
+  }
+</style>
+
+<div class="erd-page">
+  <div class="erd-header">
+    <div>
+      <h1>Database ER Diagram</h1>
+      <p>Interactive Mermaid view with focus, search, pan, zoom and fullscreen.</p>
+    </div>
+  </div>
+
+  <div class="erd-shell">
+    <aside class="erd-sidebar">
+      <input class="erd-search" id="erd-search" type="text" placeholder="Search table..." autocomplete="off">
+      <div class="erd-meta">
+        <span id="table-count">13 tables</span>
+        <span id="relation-count">21 relations</span>
+      </div>
+      <div class="erd-table-list" id="erd-table-list"></div>
+      <div class="erd-note">
+        Click a table chip to focus it in the diagram. Drag to pan. Use controls for zoom and fit.
+      </div>
+    </aside>
+
+    <section class="erd-main" id="erd-main">
+      <div class="erd-actions">
+        <button class="erd-btn" id="zoom-in" type="button">Zoom In</button>
+        <button class="erd-btn" id="zoom-out" type="button">Zoom Out</button>
+        <button class="erd-btn" id="zoom-reset" type="button">Reset</button>
+        <button class="erd-btn" id="zoom-fit" type="button">Fit</button>
+        <button class="erd-btn" id="erd-fullscreen" type="button">Fullscreen</button>
+      </div>
+
+      <div class="erd-canvas" id="erd-wrap">
+        <div class="mermaid" id="erd-mermaid">
+erDiagram
+
+  USERS {
+    INTEGER user_id PK
+    TEXT full_name
+    TEXT email UK
+    TEXT password_hash
+    TEXT city
+    TEXT phone
+    TEXT role
+    TEXT partner_name
+    TEXT partner_email
+    TEXT partner_phone
+    TEXT created_at
+  }
+
+  WEDDING_PROFILES {
+    INTEGER wedding_id PK
+    INTEGER user_id FK
+    TEXT partner_name
+    TEXT wedding_date
+    INTEGER estimated_guests
+    REAL budget
+    TEXT city
+    TEXT venue_type_preference
+    TEXT created_at
+  }
+
+  VENDOR_CATEGORIES {
+    INTEGER category_id PK
+    TEXT category_name UK
+    TEXT description
+    INTEGER default_due_months_before_wedding
+  }
+
+  CHECKLIST_ITEMS {
+    INTEGER checklist_item_id PK
+    INTEGER wedding_id FK
+    INTEGER category_id FK
+    TEXT title
+    TEXT description
+    TEXT due_date
+    TEXT status
+    TEXT completed_at
+    TEXT created_at
+  }
+
+  VENDORS {
+    INTEGER vendor_id PK
+    TEXT business_name
+    INTEGER category_id FK
+    TEXT city
+    TEXT address
+    TEXT phone
+    TEXT email
+    TEXT website
+    TEXT instagram_url
+    TEXT description
+    REAL price_min
+    REAL price_max
+    REAL rating_average
+    INTEGER is_active
+    TEXT created_at
+  }
+
+  VENDOR_PHOTOS {
+    INTEGER photo_id PK
+    INTEGER vendor_id FK
+    TEXT photo_url
+    TEXT caption
+    TEXT uploaded_at
+  }
+
+  VENDOR_SWIPES {
+    INTEGER swipe_id PK
+    INTEGER user_id FK
+    INTEGER wedding_id FK
+    INTEGER vendor_id FK
+    TEXT action
+    TEXT created_at
+  }
+
+  FAVORITE_VENDORS {
+    INTEGER wedding_id PK
+    INTEGER vendor_id PK
+    TEXT added_at
+  }
+
+  SELECTED_VENDORS {
+    INTEGER selected_vendor_id PK
+    INTEGER wedding_id FK
+    INTEGER vendor_id FK
+    INTEGER category_id FK
+    TEXT status
+    REAL agreed_price
+    TEXT notes
+    TEXT created_at
+  }
+
+  VENDOR_REVIEWS {
+    INTEGER review_id PK
+    INTEGER vendor_id FK
+    INTEGER user_id FK
+    INTEGER wedding_id FK
+    INTEGER rating
+    TEXT review_text
+    TEXT created_at
+  }
+
+  APPOINTMENTS {
+    INTEGER appointment_id PK
+    INTEGER wedding_id FK
+    INTEGER vendor_id FK
+    TEXT appointment_date
+    TEXT location
+    TEXT notes
+    TEXT status
+    TEXT created_at
+  }
+
+  BUDGET_ITEMS {
+    INTEGER budget_item_id PK
+    INTEGER wedding_id FK
+    INTEGER category_id FK
+    REAL estimated_amount
+    REAL actual_amount
+    TEXT notes
+  }
+
+  WEDDING_SUPPLIER_STATUS {
+    INTEGER wedding_id FK
+    TEXT supplier_code PK
+    TEXT status
+    TEXT notes
+    REAL budget
+    TEXT updated_at
+  }
+
+  USERS ||--o{ WEDDING_PROFILES : has
+  USERS ||--o{ VENDOR_SWIPES : performs
+  USERS ||--o{ VENDOR_REVIEWS : writes
+
+  WEDDING_PROFILES ||--o{ CHECKLIST_ITEMS : contains
+  WEDDING_PROFILES ||--o{ VENDOR_SWIPES : logs
+  WEDDING_PROFILES ||--o{ SELECTED_VENDORS : tracks
+  WEDDING_PROFILES ||--o{ APPOINTMENTS : schedules
+  WEDDING_PROFILES ||--o{ BUDGET_ITEMS : allocates
+  WEDDING_PROFILES ||--o{ VENDOR_REVIEWS : links
+  WEDDING_PROFILES ||--o{ WEDDING_SUPPLIER_STATUS : stores
+  WEDDING_PROFILES ||--o{ FAVORITE_VENDORS : favorites
+
+  VENDOR_CATEGORIES ||--o{ VENDORS : classifies
+  VENDOR_CATEGORIES ||--o{ CHECKLIST_ITEMS : categorises
+  VENDOR_CATEGORIES ||--o{ SELECTED_VENDORS : categorises
+  VENDOR_CATEGORIES ||--o{ BUDGET_ITEMS : budgeted_as
+
+  VENDORS ||--o{ VENDOR_PHOTOS : has
+  VENDORS ||--o{ VENDOR_SWIPES : appears_in
+  VENDORS ||--o{ SELECTED_VENDORS : selected_as
+  VENDORS ||--o{ VENDOR_REVIEWS : reviewed_in
+  VENDORS ||--o{ APPOINTMENTS : appears_in
+  VENDORS ||--o{ FAVORITE_VENDORS : favorited
+        </div>
+        <div class="erd-status" id="erd-status">Ready</div>
+
+        <div class="erd-flow-overlay" id="erd-flow-overlay">
+          <div class="erd-flow-bar">
+            <button class="erd-flow-back" id="erd-flow-back" type="button">← Back to full ERD</button>
+            <div>
+              <h2 class="erd-flow-title" id="erd-flow-title">Entity</h2>
+              <div class="erd-flow-sub" id="erd-flow-sub">Relationship flow</div>
+            </div>
+          </div>
+          <div class="erd-flow-canvas">
+            <div class="mermaid" id="erd-flow-mermaid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: 'loose',
+    er: {
+      layoutDirection: 'TB',
+      minEntityWidth: 230,
+      minEntityHeight: 48,
+      entityPadding: 12,
+      stroke: '#cfd4dc'
+    },
+    theme: 'base',
+    themeVariables: {
+      background: '#ffffff',
+      primaryColor: '#ffffff',
+      primaryBorderColor: '#c85d67',
+      primaryTextColor: '#3d2b2f',
+      lineColor: '#9aa3af',
+      tertiaryColor: '#fff6f7',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '16px'
+    }
+  });
+
+  (function () {
+    var TABLES = [
+      'USERS', 'WEDDING_PROFILES', 'VENDOR_CATEGORIES', 'CHECKLIST_ITEMS',
+      'VENDORS', 'VENDOR_PHOTOS', 'VENDOR_SWIPES', 'FAVORITE_VENDORS',
+      'SELECTED_VENDORS', 'VENDOR_REVIEWS', 'APPOINTMENTS', 'BUDGET_ITEMS',
+      'WEDDING_SUPPLIER_STATUS'
+    ];
+
+    // Directed relationships: parent ||--o{ child : label
+    var RELATIONSHIPS = [
+      ['USERS', 'WEDDING_PROFILES', 'has'],
+      ['USERS', 'VENDOR_SWIPES', 'performs'],
+      ['USERS', 'VENDOR_REVIEWS', 'writes'],
+      ['WEDDING_PROFILES', 'CHECKLIST_ITEMS', 'contains'],
+      ['WEDDING_PROFILES', 'VENDOR_SWIPES', 'logs'],
+      ['WEDDING_PROFILES', 'SELECTED_VENDORS', 'tracks'],
+      ['WEDDING_PROFILES', 'APPOINTMENTS', 'schedules'],
+      ['WEDDING_PROFILES', 'BUDGET_ITEMS', 'allocates'],
+      ['WEDDING_PROFILES', 'VENDOR_REVIEWS', 'links'],
+      ['WEDDING_PROFILES', 'WEDDING_SUPPLIER_STATUS', 'stores'],
+      ['WEDDING_PROFILES', 'FAVORITE_VENDORS', 'favorites'],
+      ['VENDOR_CATEGORIES', 'VENDORS', 'classifies'],
+      ['VENDOR_CATEGORIES', 'CHECKLIST_ITEMS', 'categorises'],
+      ['VENDOR_CATEGORIES', 'SELECTED_VENDORS', 'categorises'],
+      ['VENDOR_CATEGORIES', 'BUDGET_ITEMS', 'budgets'],
+      ['VENDORS', 'VENDOR_PHOTOS', 'has'],
+      ['VENDORS', 'VENDOR_SWIPES', 'appears in'],
+      ['VENDORS', 'SELECTED_VENDORS', 'selected as'],
+      ['VENDORS', 'VENDOR_REVIEWS', 'reviewed in'],
+      ['VENDORS', 'APPOINTMENTS', 'appears in'],
+      ['VENDORS', 'FAVORITE_VENDORS', 'favorited']
+    ];
+
+    var ENTITY_DESCRIPTIONS = {
+      USERS: 'People with accounts: couples planning weddings.',
+      WEDDING_PROFILES: 'A wedding plan owned by a user (date, budget, city...).',
+      VENDOR_CATEGORIES: 'Service categories (venue, catering, photography...).',
+      CHECKLIST_ITEMS: 'To-do items tied to a wedding and a category.',
+      VENDORS: 'Service providers couples can browse and book.',
+      VENDOR_PHOTOS: 'Photos uploaded for a vendor portfolio.',
+      VENDOR_SWIPES: 'Like/dislike swipes a user makes on vendors.',
+      FAVORITE_VENDORS: 'Vendors saved as favorites by a wedding.',
+      SELECTED_VENDORS: 'Vendors officially chosen for a wedding.',
+      VENDOR_REVIEWS: 'Ratings and reviews of vendors after the wedding.',
+      APPOINTMENTS: 'Scheduled meetings between a wedding and a vendor.',
+      BUDGET_ITEMS: 'Per-category budget allocations for a wedding.',
+      WEDDING_SUPPLIER_STATUS: 'Per-supplier planning status and notes for a wedding.'
+    };
+
+    var RELATIONS = RELATIONSHIPS.length;
+    var statusEl = document.getElementById('erd-status');
+    var listEl = document.getElementById('erd-table-list');
+    var searchEl = document.getElementById('erd-search');
+    var mainEl = document.getElementById('erd-main');
+    var flowOverlay = document.getElementById('erd-flow-overlay');
+    var flowTitle = document.getElementById('erd-flow-title');
+    var flowSub = document.getElementById('erd-flow-sub');
+    var flowMermaid = document.getElementById('erd-flow-mermaid');
+    document.getElementById('relation-count').textContent = RELATIONS + ' relations';
+
+    var panZoom = null;
+
+    function fitAndCenter() {
+      if (!panZoom) return;
+      panZoom.resize();
+      panZoom.fit();
+      panZoom.center();
+    }
+
+    function setStatus(text) { statusEl.textContent = text; }
+
+    function makeChip(table) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'erd-chip';
+      btn.textContent = table;
+      btn.dataset.table = table;
+      btn.addEventListener('click', function () {
+        focusTable(table);
+      });
+      return btn;
+    }
+
+    function renderTableList(filterText) {
+      var q = (filterText || '').trim().toUpperCase();
+      listEl.innerHTML = '';
+      var shown = 0;
+      TABLES.forEach(function (t) {
+        if (q && t.indexOf(q) === -1) return;
+        listEl.appendChild(makeChip(t));
+        shown += 1;
+      });
+      document.getElementById('table-count').textContent = shown + ' tables';
+    }
+
+    function clearFocus() {
+      var svg = document.querySelector('#erd-mermaid svg');
+      if (!svg) return;
+      svg.querySelectorAll('rect.erd-focus-shape').forEach(function (rect) {
+        rect.classList.remove('erd-focus-shape');
+      });
+      document.querySelectorAll('.erd-chip.active').forEach(function (chip) {
+        chip.classList.remove('active');
+      });
+    }
+
+    function findEntityGroup(tableName) {
+      var svg = document.querySelector('#erd-mermaid svg');
+      if (!svg) return null;
+      var groups = svg.querySelectorAll('g');
+      for (var i = 0; i < groups.length; i += 1) {
+        var g = groups[i];
+        var text = (g.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+        if (!text) continue;
+        if (text.indexOf(tableName) === -1) continue;
+        if (!g.querySelector('rect')) continue;
+        return g;
+      }
+      return null;
+    }
+
+    function activateChip(tableName) {
+      document.querySelectorAll('.erd-chip').forEach(function (chip) {
+        chip.classList.toggle('active', chip.dataset.table === tableName);
+      });
+    }
+
+    function focusTable(tableName) {
+      showFlow(tableName);
+    }
+
+    function buildFlowSource(table) {
+      var parents = RELATIONSHIPS.filter(function (r) { return r[1] === table; });
+      var children = RELATIONSHIPS.filter(function (r) { return r[0] === table; });
+      var lines = ['flowchart LR'];
+      lines.push('  CENTER(["<b>' + table + '</b>'+ '<br/><span style=\'font-size:.72rem;font-weight:400;color:#fff\'>' + (ENTITY_DESCRIPTIONS[table] || '') + '</span>"])');
+      lines.push('  class CENTER center');
+
+      parents.forEach(function (r, i) {
+        var id = 'P' + i;
+        lines.push('  ' + id + '["' + r[0] + '"]');
+        lines.push('  ' + id + ' -- "' + r[2] + '" --> CENTER');
+        lines.push('  class ' + id + ' parent');
+        lines.push('  click ' + id + ' jumpTo');
+      });
+
+      children.forEach(function (r, i) {
+        var id = 'C' + i;
+        lines.push('  ' + id + '["' + r[1] + '"]');
+        lines.push('  CENTER -- "' + r[2] + '" --> ' + id);
+        lines.push('  class ' + id + ' child');
+        lines.push('  click ' + id + ' jumpTo');
+      });
+
+      if (parents.length === 0 && children.length === 0) {
+        lines.push('  NONE["No relationships defined"]');
+        lines.push('  CENTER --- NONE');
+      }
+
+      lines.push('  classDef center fill:#c85d67,stroke:#a8424c,color:#fff,rx:14,ry:14');
+      lines.push('  classDef parent fill:#fff1f4,stroke:#c85d67,color:#5a3742,rx:10,ry:10');
+      lines.push('  classDef child  fill:#f3ecff,stroke:#8b6dc4,color:#3d2b4d,rx:10,ry:10');
+      return lines.join('\n');
+    }
+
+    window.jumpTo = function (nodeId) {
+      // Mermaid passes the node label text on click; fall back to id
+      var label = nodeId;
+      var el = event && event.target ? event.target.closest('g.node') : null;
+      if (el) {
+        var txt = (el.textContent || '').trim().split(/\s+/)[0].toUpperCase();
+        if (TABLES.indexOf(txt) !== -1) label = txt;
+      }
+      if (TABLES.indexOf(label) !== -1) showFlow(label);
+    };
+
+    function showFlow(table) {
+      activateChip(table);
+      flowTitle.textContent = table;
+      flowSub.textContent = ENTITY_DESCRIPTIONS[table] || 'Relationship flow';
+      var source = buildFlowSource(table);
+      flowMermaid.removeAttribute('data-processed');
+      flowMermaid.innerHTML = source;
+      flowOverlay.classList.add('active');
+      setStatus('Showing flow for ' + table);
+      try {
+        mermaid.run({ nodes: [flowMermaid] }).then(function () {
+          var svg = flowMermaid.querySelector('svg');
+          if (svg) {
+            svg.removeAttribute('width');
+            svg.removeAttribute('height');
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function hideFlow() {
+      flowOverlay.classList.remove('active');
+      clearFocus();
+      setStatus('Back to full ERD');
+      if (panZoom) { fitAndCenter(); }
+    }
+
+    document.getElementById('erd-flow-back').addEventListener('click', hideFlow);
+
+    function bindEntityClicks() {
+      var svg = document.querySelector('#erd-mermaid svg');
+      if (!svg) return;
+      TABLES.forEach(function (table) {
+        var group = findEntityGroup(table);
+        if (!group) return;
+        group.style.cursor = 'pointer';
+        group.addEventListener('click', function () {
+          focusTable(table);
+        });
+      });
+    }
+
+    function setupPanZoom() {
+      var svg = document.querySelector('#erd-mermaid svg');
+      if (!svg || typeof svgPanZoom !== 'function') {
+        setStatus('Loaded without pan-zoom helper');
+        return;
+      }
+
+      // Strip mermaid's intrinsic sizing so the SVG actually fills the canvas.
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.maxWidth = 'none';
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      panZoom = svgPanZoom(svg, {
+        zoomEnabled: true,
+        controlIconsEnabled: false,
+        fit: true,
+        center: true,
+        contain: false,
+        minZoom: 0.2,
+        maxZoom: 8.0,
+        zoomScaleSensitivity: 0.25,
+      });
+
+      // Re-fit several times as layout settles (fonts, container size, etc.).
+      [0, 60, 200, 500, 900].forEach(function (delay) {
+        setTimeout(fitAndCenter, delay);
+      });
+
+      setStatus('Ready - drag to pan, wheel to zoom');
+
+      document.getElementById('zoom-in').addEventListener('click', function () { panZoom.zoomIn(); });
+      document.getElementById('zoom-out').addEventListener('click', function () { panZoom.zoomOut(); });
+      document.getElementById('zoom-reset').addEventListener('click', function () {
+        clearFocus();
+        fitAndCenter();
+        setStatus('View reset to full diagram');
+      });
+      document.getElementById('zoom-fit').addEventListener('click', function () {
+        fitAndCenter();
+        setStatus('Diagram fitted to viewport');
+      });
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        mainEl.requestFullscreen().catch(function () {});
+      } else {
+        document.exitFullscreen().catch(function () {});
+      }
+    }
+
+    document.getElementById('erd-fullscreen').addEventListener('click', toggleFullscreen);
+
+    window.addEventListener('resize', function () {
+      fitAndCenter();
+    });
+
+    document.addEventListener('fullscreenchange', function () {
+      setTimeout(function () {
+        fitAndCenter();
+      }, 50);
+    });
+
+    searchEl.addEventListener('input', function () {
+      renderTableList(searchEl.value);
+    });
+
+    var initAttempts = 0;
+    function initWhenReady() {
+      var svg = document.querySelector('#erd-mermaid svg');
+      if (!svg && initAttempts < 20) {
+        initAttempts += 1;
+        setTimeout(initWhenReady, 180);
+        return;
+      }
+      renderTableList('');
+      bindEntityClicks();
+      setupPanZoom();
+      setStatus('Ready - full diagram loaded');
+    }
+
+    initWhenReady();
+  })();
+</script>
+{% endblock %}

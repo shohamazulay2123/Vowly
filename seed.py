@@ -647,7 +647,7 @@ def main():
                     lock = vid * 10 + j          # unique lock → same photo every seed
                     cur.execute(
                         "INSERT INTO vendor_photos (vendor_id, photo_url, caption) VALUES (?,?,?)",
-                        (vid, f"https://loremflickr.com/800/520/{kw}?lock={lock}", f"{biz} – photo {j+1}"),
+                        (vid, f"https://picsum.photos/seed/{kw}-{lock}/800/520", f"{biz} – photo {j+1}"),
                     )
 
     # Reviews — only generate fake reviews for vendors that have no real

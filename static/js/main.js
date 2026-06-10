@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSwipeDeck();
   initChecklist();
   initSupplierNotesForm();
+  initSettings();
 });
 
 /* ---------------------------------------------------------------------------
@@ -213,7 +214,7 @@ function initSwipeDeck() {
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
     if (e.key === "ArrowLeft")  commit(topCard(), "left");
     if (e.key === "ArrowRight") commit(topCard(), "right");
-    if (e.key === "Escape") closeSheet();
+    if (e.key === "Escape" && window.closeSheet) window.closeSheet();
   });
 
   refreshDepths();
@@ -534,4 +535,26 @@ function initSupplierNotesForm() {
     }).then((r) => r.ok ? showToast('Saved') : showToast('Couldn’t save', false))
       .catch(() => showToast('Couldn’t save', false));
   });
+}
+
+function initSettings() {
+  const form = document.querySelector(".settings-form");
+  if (!form) return;
+
+  form.querySelectorAll("[data-autosubmit-settings]").forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) form.requestSubmit();
+    });
+  });
+
+  const slider = form.querySelector("[data-distance-slider]");
+  const output = document.getElementById("distance-output");
+  if (!slider || !output) return;
+
+  const template = slider.dataset.distanceTemplate || "{value} km";
+  const sync = () => {
+    output.textContent = template.replace("{value}", slider.value);
+  };
+  slider.addEventListener("input", sync);
+  sync();
 }

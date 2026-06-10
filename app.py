@@ -3,6 +3,7 @@ Vowly - Flask wedding planning app.
 """
 
 import os
+import math
 from datetime import datetime
 from functools import wraps
 
@@ -24,6 +25,142 @@ from suppliers import (
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.teardown_appcontext(close_db)
+
+
+TRANSLATIONS = {
+    "en": {
+        "app_title": "Vowly · Plan your perfect wedding",
+        "home": "Home",
+        "liked": "Liked",
+        "settings": "Settings",
+        "logout": "Logout",
+        "login": "Login",
+        "sign_up": "Sign up",
+        "footer": "Crafted for couples in love.",
+        "settings_title": "Settings",
+        "settings_subtitle": "Choose how Vowly feels and which vendors appear first.",
+        "about_us": "About us",
+        "about_text": "Vowly helps couples plan their wedding from one calm place: track supplier progress, discover vendors, save favorites, and keep the next decision clear.",
+        "preferences": "Preferences",
+        "language": "Language",
+        "english": "English",
+        "hebrew": "Hebrew",
+        "distance": "Vendor distance",
+        "distance_value": "{value} km",
+        "distance_hint": "Used in swipe mode to prioritize vendors near your city.",
+        "save_settings": "Save settings",
+        "settings_saved": "Settings saved.",
+        "home_title": "Home",
+        "welcome_back": "Home",
+        "days_until": "days until",
+        "day_until": "day until",
+        "set_wedding_date": "Set your wedding date",
+        "booked": "Booked",
+        "in_progress": "In progress",
+        "to_do": "To do",
+        "search_vendors": "Search vendors",
+        "all": "All",
+        "no_suppliers": "No suppliers match these filters.",
+        "search_supplier": "Search for supplier",
+        "no_suppliers_found": "No suppliers found",
+        "try_another_search": "Try another search.",
+    },
+    "he": {
+        "app_title": "Vowly · תכנון חתונה מושלם",
+        "home": "בית",
+        "liked": "מועדפים",
+        "settings": "הגדרות",
+        "logout": "התנתקות",
+        "login": "התחברות",
+        "sign_up": "הרשמה",
+        "footer": "נבנה באהבה לזוגות שמתכננים חתונה.",
+        "settings_title": "הגדרות",
+        "settings_subtitle": "בחרו איך Vowly תרגיש ואילו ספקים יופיעו קודם.",
+        "about_us": "עלינו",
+        "about_text": "Vowly עוזרת לזוגות לתכנן חתונה במקום אחד רגוע: לעקוב אחרי התקדמות ספקים, לגלות ספקים, לשמור מועדפים ולהתקדם להחלטה הבאה.",
+        "preferences": "העדפות",
+        "language": "שפה",
+        "english": "אנגלית",
+        "hebrew": "עברית",
+        "distance": "מרחק ספקים",
+        "distance_value": "{value} ק״מ",
+        "distance_hint": "משמש במסך הסווייפ כדי לתעדף ספקים ליד העיר שלכם.",
+        "save_settings": "שמירת הגדרות",
+        "settings_saved": "ההגדרות נשמרו.",
+        "home_title": "בית",
+        "welcome_back": "בית",
+        "days_until": "ימים עד",
+        "day_until": "יום עד",
+        "set_wedding_date": "הגדרת תאריך חתונה",
+        "booked": "נסגר",
+        "in_progress": "בתהליך",
+        "to_do": "לביצוע",
+        "search_vendors": "חיפוש ספקים",
+        "all": "הכול",
+        "no_suppliers": "אין ספקים שתואמים לסינון.",
+        "search_supplier": "חיפוש ספק",
+        "no_suppliers_found": "לא נמצאו ספקים",
+        "try_another_search": "נסו חיפוש אחר.",
+    },
+}
+
+
+CITY_COORDS = {
+    "Acre": (32.9281, 35.0827), "Akko": (32.9281, 35.0827),
+    "Afula": (32.6091, 35.2892), "Arad": (31.2588, 35.2128),
+    "Ariel": (32.1065, 35.1845), "Ashdod": (31.8044, 34.6553),
+    "Ashkelon": (31.6688, 34.5743), "Bat Yam": (32.0167, 34.7500),
+    "Beer Sheva": (31.2529, 34.7915), "Beit Shean": (32.4973, 35.4963),
+    "Beit Shemesh": (31.7514, 34.9885), "Bnei Brak": (32.0807, 34.8338),
+    "Dimona": (31.0708, 35.0327), "Eilat": (29.5577, 34.9519),
+    "Gedera": (31.8146, 34.7796), "Givatayim": (32.0723, 34.8125),
+    "Hadera": (32.4340, 34.9196), "Haifa": (32.7940, 34.9896),
+    "Herzliya": (32.1624, 34.8447), "Hod HaSharon": (32.1508, 34.8883),
+    "Holon": (32.0158, 34.7874), "Jerusalem": (31.7683, 35.2137),
+    "Kfar Saba": (32.1782, 34.9076), "Kiryat Ata": (32.8072, 35.1050),
+    "Kiryat Bialik": (32.8321, 35.0877), "Kiryat Gat": (31.6090, 34.7642),
+    "Kiryat Malachi": (31.7300, 34.7460), "Kiryat Motzkin": (32.8371, 35.0776),
+    "Kiryat Ono": (32.0646, 34.8554), "Kiryat Shmona": (33.2073, 35.5721),
+    "Kiryat Yam": (32.8497, 35.0696), "Lod": (31.9510, 34.8881),
+    "Ma'alot-Tarshiha": (33.0167, 35.2667), "Mitzpe Ramon": (30.6094, 34.8011),
+    "Modi'in": (31.8980, 35.0104), "Modiin": (31.8980, 35.0104),
+    "Nahariya": (33.0059, 35.0941), "Nazareth": (32.6996, 35.3035),
+    "Nes Ziona": (31.9293, 34.7987), "Nesher": (32.7650, 35.0500),
+    "Netanya": (32.3215, 34.8532), "Netivot": (31.4230, 34.5891),
+    "Or Akiva": (32.5067, 34.9206), "Or Yehuda": (32.0311, 34.8458),
+    "Petah Tikva": (32.0840, 34.8878), "Ra'anana": (32.1848, 34.8713),
+    "Ramat Gan": (32.0684, 34.8248), "Ramat HaSharon": (32.1461, 34.8394),
+    "Ramla": (31.9279, 34.8623), "Rehovot": (31.8948, 34.8113),
+    "Rishon LeZion": (31.9730, 34.7925), "Rosh HaAyin": (32.0956, 34.9566),
+    "Safed": (32.9646, 35.4960), "Sderot": (31.5250, 34.5969),
+    "Tel Aviv": (32.0853, 34.7818), "Tiberias": (32.7959, 35.5309),
+    "Tirat Carmel": (32.7617, 34.9719), "Yavne": (31.8781, 34.7394),
+    "Yehud": (32.0332, 34.8891), "Yokneam": (32.6599, 35.1107),
+}
+
+
+def _language_for(user):
+    lang = (user["language"] if user and "language" in user.keys() else None) or session.get("language") or "en"
+    return lang if lang in TRANSLATIONS else "en"
+
+
+def _t(lang, key):
+    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, TRANSLATIONS["en"].get(key, key))
+
+
+def _city_distance_km(a, b):
+    if not a or not b:
+        return None
+    ca = CITY_COORDS.get(str(a).strip())
+    cb = CITY_COORDS.get(str(b).strip())
+    if not ca or not cb:
+        return None
+    lat1, lon1 = map(math.radians, ca)
+    lat2, lon2 = map(math.radians, cb)
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    h = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return round(6371 * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h)), 1)
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +201,8 @@ def current_wedding():
 
 @app.context_processor
 def inject_globals():
+    user = current_user()
+    lang = _language_for(user)
     w = current_wedding()
     liked_count = 0
     if w:
@@ -72,8 +211,15 @@ def inject_globals():
             (w["wedding_id"],), one=True,
         )
         liked_count = row["cnt"] if row else 0
-    return {"user": current_user(), "wedding": w, "now": datetime.utcnow(),
-            "liked_count": liked_count}
+    return {
+        "user": user,
+        "wedding": w,
+        "now": datetime.utcnow(),
+        "liked_count": liked_count,
+        "lang": lang,
+        "text_dir": "rtl" if lang == "he" else "ltr",
+        "t": lambda key: _t(lang, key),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +230,7 @@ def inject_globals():
 def index():
     """Combined login + register welcome screen."""
     if "user_id" in session and request.method == "GET":
-        return redirect(url_for("checklist"))
+        return redirect(url_for("home"))
 
     mode = request.args.get("mode", "login")  # 'login' or 'register'
 
@@ -127,7 +273,7 @@ def index():
                  partner_phone or None),
             )
             session["user_id"] = uid
-            flash("Welcome to Vowly! Let's set up your wedding checklist.", "success")
+            flash("Welcome to Vowly! Let's set up your home dashboard.", "success")
             return redirect(url_for("onboarding"))
 
         # login
@@ -137,7 +283,7 @@ def index():
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["user_id"]
             flash(f"Welcome back, {user['full_name'].split()[0]}!", "success")
-            return redirect(url_for("checklist"))
+            return redirect(url_for("home"))
         flash("Invalid email or password.", "error")
         return redirect(url_for("index", mode="login"))
 
@@ -160,6 +306,28 @@ def logout():
     session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for("index"))
+
+
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    user = current_user()
+    lang = _language_for(user)
+    if request.method == "POST":
+        language = request.form.get("language", "en")
+        if language not in TRANSLATIONS:
+            language = "en"
+        distance = request.form.get("distance_km", type=int) or 50
+        distance = max(5, min(distance, 300))
+        execute(
+            "UPDATE users SET language=?, distance_km=? WHERE user_id=?",
+            (language, distance, session["user_id"]),
+        )
+        session["language"] = language
+        flash(_t(language, "settings_saved"), "success")
+        return redirect(url_for("settings"))
+    distance_km = user["distance_km"] if user and "distance_km" in user.keys() and user["distance_km"] else 50
+    return render_template("settings.html", selected_language=lang, distance_km=distance_km)
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +363,7 @@ def wedding_profile():
                 (session["user_id"], partner, wdate, guests, budget, city, venue_pref),
             )
             flash("Wedding profile created. Welcome to Vowly!", "success")
-        return redirect(url_for("checklist"))
+        return redirect(url_for("home"))
     return render_template("wedding_profile.html", w=w)
 
 
@@ -252,7 +420,7 @@ def onboarding():
     """Post-signup welcome screen: 'What would you like to start with?'
 
     The user picks one or more suppliers as starting points; each picked
-    supplier is set to 'In progress'. Then we redirect to the full checklist.
+    supplier is set to 'In progress'. Then we redirect to Home.
     """
     user = current_user()
     role = (user["role"] if user else None) or ""
@@ -275,7 +443,7 @@ def onboarding():
             )
         if picked:
             flash(f"Great \u2014 we marked {len(picked)} supplier(s) as in progress.", "success")
-        return redirect(url_for("checklist"))
+        return redirect(url_for("home"))
 
     grouped = group_by_category(suppliers)
     state   = _supplier_state_map(current_wedding()["wedding_id"]) if current_wedding() else {}
@@ -287,9 +455,9 @@ def onboarding():
     )
 
 
-@app.route("/checklist")
+@app.route("/home")
 @login_required
-def checklist():
+def home():
     user = current_user()
     role = (user["role"] if user else None) or ""
     w = _ensure_wedding()
@@ -408,6 +576,12 @@ def checklist():
     )
 
 
+@app.route("/checklist")
+@login_required
+def checklist():
+    return redirect(url_for("home"))
+
+
 @app.route("/checklist/<code>/update", methods=["POST"])
 @login_required
 def checklist_update(code):
@@ -440,7 +614,7 @@ def checklist_update(code):
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return {"ok": True, "code": code, "status": status}, 200
-    return redirect(url_for("checklist") + f"#sup-{code}")
+    return redirect(url_for("home") + f"#sup-{code}")
 
 
 # ---------------------------------------------------------------------------
@@ -513,9 +687,9 @@ def vendor_detail(vendor_id):
 @app.route("/swipe")
 @login_required
 def swipe_pick_category():
-    # Legacy entry point: send users to the checklist where each supplier card
+    # Legacy entry point: send users to Home where each supplier card
     # opens its own swipe queue.
-    return redirect(url_for("checklist"))
+    return redirect(url_for("home"))
 
 
 @app.route("/swipe/<int:category_id>")
@@ -528,22 +702,21 @@ def swipe(category_id):
     sort = request.args.get("sort", "recommended")
     if sort not in ("recommended", "near"):
         sort = "recommended"
+    search = request.args.get("q", "").strip()
 
-    # Optional ?supplier=<code> ties the swipe queue back to a specific
-    # checklist supplier so we can show its notes/budget side-by-side.
+    # Optional ?supplier=<code> keeps the user in the supplier-specific queue.
     supplier_code = (request.args.get("supplier") or "").strip()
     supplier = SUPPLIERS_BY_CODE.get(supplier_code) if supplier_code else None
-    supplier_state = None
-    if supplier:
-        supplier_state = query(
-            "SELECT notes, budget FROM wedding_supplier_status "
-            "WHERE wedding_id = ? AND supplier_code = ?",
-            (w["wedding_id"], supplier["code"]),
-            one=True,
-        )
 
     user = current_user()
     user_city = ((user["city"] if user else "") or "").strip()
+    max_distance = user["distance_km"] if user and "distance_km" in user.keys() and user["distance_km"] else 50
+
+    search_clause = ""
+    search_params = ()
+    if search:
+        search_clause = " AND (v.business_name LIKE ? OR v.description LIKE ?)"
+        search_params = (f"%{search}%", f"%{search}%")
 
     if sort == "near" and user_city:
         sql = """SELECT v.*,
@@ -551,18 +724,32 @@ def swipe(category_id):
                  FROM vendors v
                  WHERE v.category_id = ? AND v.is_active = 1
                    AND v.vendor_id NOT IN (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
+                   {search_clause}
                  ORDER BY distance_rank ASC, v.rating_average DESC
-                 LIMIT 8"""
-        params = (user_city, category_id, w["wedding_id"])
+                 LIMIT 80""".format(search_clause=search_clause)
+        params = (user_city, category_id, w["wedding_id"], *search_params)
     else:
         sql = """SELECT v.* FROM vendors v
                  WHERE v.category_id = ? AND v.is_active = 1
                    AND v.vendor_id NOT IN (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
+                   {search_clause}
                  ORDER BY v.rating_average DESC
-                 LIMIT 8"""
-        params = (category_id, w["wedding_id"])
+                 LIMIT 80""".format(search_clause=search_clause)
+        params = (category_id, w["wedding_id"], *search_params)
 
     vendors = query(sql, params)
+    if user_city:
+        nearby = []
+        unknown = []
+        for vendor in vendors:
+            dist = _city_distance_km(user_city, vendor["city"])
+            if dist is None:
+                unknown.append(vendor)
+            elif dist <= max_distance:
+                nearby.append((dist, vendor))
+        nearby.sort(key=lambda item: (item[0], -(item[1]["rating_average"] or 0)))
+        vendors = [vendor for _dist, vendor in nearby] + unknown
+    vendors = vendors[:8]
 
     # Lookup one photo per vendor in a single query.
     photo_map = {}
@@ -576,24 +763,13 @@ def swipe(category_id):
         for p in photos:
             photo_map.setdefault(p["vendor_id"], p["photo_url"])
 
-    # Vendors already liked in this category (shown at bottom)
-    liked_in_category = query(
-        """SELECT v.vendor_id, v.business_name, v.city, v.rating_average,
-                  (SELECT photo_url FROM vendor_photos
-                   WHERE vendor_id = v.vendor_id LIMIT 1) AS photo_url
-             FROM favorite_vendors fv
-             JOIN vendors v ON v.vendor_id = fv.vendor_id
-            WHERE fv.wedding_id = ? AND v.category_id = ?
-            ORDER BY fv.added_at DESC""",
-        (w["wedding_id"], category_id),
-    )
-
     return render_template("swipe.html",
                            category=category, vendors=vendors,
                            photo_map=photo_map, sort=sort,
+                           search=search,
                            user_city=user_city,
-                           supplier=supplier, supplier_state=supplier_state,
-                           liked_in_category=liked_in_category)
+                           max_distance=max_distance,
+                           supplier=supplier)
 
 
 @app.route("/swipe/<int:category_id>/<int:vendor_id>/<action>", methods=["POST"])
@@ -902,15 +1078,6 @@ def analytics():
         most_skipped=most_skipped, popular_categories=popular_categories,
         checklist_progress=checklist_progress, budget_by_cat=budget_by_cat,
         top_cities=top_cities, elite_vendors=elite_vendors)
-
-
-# ---------------------------------------------------------------------------
-# ERD
-# ---------------------------------------------------------------------------
-
-@app.route("/erd")
-def erd():
-    return render_template("erd.html")
 
 
 # ---------------------------------------------------------------------------

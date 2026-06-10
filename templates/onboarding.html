@@ -8,7 +8,7 @@
     <h1>Welcome to Vowly{% if user %}, {{ user.full_name.split(' ')[0] }}{% endif %} <span class="inline-icon">{{ icon('rings', 24) }}</span></h1>
     <p class="muted">
       What would you like to start with? Pick the suppliers that are top of mind —
-      we'll mark them as <em>In progress</em> and you can manage everything else from your checklist.
+      we'll mark them as <em>In progress</em> and you can manage everything else from Home.
     </p>
     {% if role %}
       <p class="muted small">Showing suppliers relevant to: <strong>{{ role }}</strong>.</p>
@@ -46,7 +46,7 @@
   {% endfor %}
 
   <div class="onboarding-actions">
-    <a class="btn btn-ghost" href="{{ url_for('checklist') }}">Skip — see full checklist</a>
+    <a class="btn btn-ghost" href="{{ url_for('home') }}">Skip — see Home</a>
     <button class="btn btn-primary btn-large" type="submit">Start planning</button>
   </div>
 </form>

@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS users (
     partner_name   TEXT,
     partner_email  TEXT,
     partner_phone  TEXT,
+    language       TEXT DEFAULT 'en',
+    distance_km    INTEGER DEFAULT 50,
     created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -231,6 +233,8 @@ def init_db():
         ("partner_name",  "ALTER TABLE users ADD COLUMN partner_name TEXT"),
         ("partner_email", "ALTER TABLE users ADD COLUMN partner_email TEXT"),
         ("partner_phone", "ALTER TABLE users ADD COLUMN partner_phone TEXT"),
+        ("language",      "ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'en'"),
+        ("distance_km",   "ALTER TABLE users ADD COLUMN distance_km INTEGER DEFAULT 50"),
     ):
         if col not in existing:
             conn.execute(ddl)

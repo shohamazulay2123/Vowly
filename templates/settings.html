@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('settings_title') }} · Vowly{% endblock %}
+
+{% block content %}
+<header class="page-header settings-header">
+  <div>
+    <h1>{{ t('settings_title') }}</h1>
+    <p class="muted">{{ t('settings_subtitle') }}</p>
+  </div>
+</header>
+
+<div class="settings-layout">
+  <section class="settings-panel" aria-labelledby="about-title">
+    <h2 id="about-title">{{ t('about_us') }}</h2>
+    <p class="muted">{{ t('about_text') }}</p>
+  </section>
+
+  <section class="settings-panel" aria-labelledby="preferences-title">
+    <h2 id="preferences-title">{{ t('preferences') }}</h2>
+    <form method="post" class="form settings-form">
+      <fieldset>
+        <legend>{{ t('language') }}</legend>
+        <div class="settings-language">
+          <label class="settings-choice {% if selected_language == 'en' %}is-on{% endif %}">
+            <input type="radio" name="language" value="en" data-autosubmit-settings {% if selected_language == 'en' %}checked{% endif %}>
+            {{ t('english') }}
+          </label>
+          <label class="settings-choice {% if selected_language == 'he' %}is-on{% endif %}">
+            <input type="radio" name="language" value="he" data-autosubmit-settings {% if selected_language == 'he' %}checked{% endif %}>
+            {{ t('hebrew') }}
+          </label>
+        </div>
+      </fieldset>
+
+      <label class="settings-range">
+        <span class="settings-range-head">
+          <span>{{ t('distance') }}</span>
+          <output id="distance-output">{{ t('distance_value').format(value=distance_km) }}</output>
+        </span>
+        <input type="range" name="distance_km" min="5" max="300" step="5" value="{{ distance_km }}" data-distance-slider data-distance-template="{{ t('distance_value') }}">
+        <span class="muted small">{{ t('distance_hint') }}</span>
+      </label>
+
+      <button class="btn btn-primary" type="submit">{{ icon('check', 16) }}{{ t('save_settings') }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -3,63 +3,11 @@
 {% block title %}Swipe · {{ category.category_name }} · Vowly{% endblock %}
 
 {% block content %}
-<header class="page-header swipe-header">
-  <div>
-    <a href="{{ url_for('checklist') }}" class="back-link">{{ icon('arrow-left', 16) }} Back to checklist</a>
-    <h1>{% if supplier %}{{ supplier.name }}{% else %}{{ category.category_name }}{% endif %}</h1>
-    <p class="muted small">Swipe right to like · left to skip · or drag the card.</p>
-  </div>
-</header>
-
-{# ---------- Supplier notes & budget (when arriving from a checklist card) ---------- #}
-{% if supplier %}
-<section class="card supplier-notes-card" aria-labelledby="supplier-notes-title">
-  <h3 id="supplier-notes-title" class="supplier-notes-title">Your plans for {{ supplier.name }}</h3>
-  <form method="post"
-        action="{{ url_for('checklist_update', code=supplier.code) }}"
-        class="supplier-form form supplier-notes-form"
-        data-supplier-code="{{ supplier.code }}">
-    {# Status is now derived from real activity; we still post a value so the
-       endpoint accepts the form. #}
-    <input type="hidden" name="status" value="In progress">
-
-    <div class="form-row">
-      <label class="grow">
-        <span class="muted small">Notes</span>
-        <textarea name="notes" rows="3"
-                  placeholder="Anything to remember about {{ supplier.name }}…">{{ (supplier_state.notes if supplier_state else '') or '' }}</textarea>
-      </label>
-      <label class="grow" style="flex: 0 0 220px;">
-        <span class="muted small">Budget</span>
-        <div class="input-prefix">
-          <span class="prefix">₪</span>
-          <input type="number" name="budget" step="0.01" min="0"
-                 value="{{ '%.2f'|format(supplier_state.budget) if supplier_state and supplier_state.budget is not none else '' }}"
-                 placeholder="0.00">
-        </div>
-      </label>
-    </div>
-
-    <div class="supplier-actions">
-      <button type="submit" class="btn btn-primary btn-sm">Save</button>
-      <span class="muted small supplier-notes-hint" data-notes-hint hidden>Saved</span>
-    </div>
-  </form>
-</section>
-{% endif %}
-
-{# ---------- Filters ---------- #}
-<div class="card swipe-filters">
-  <span class="filter-label">Sort by</span>
-  <a class="chip {% if sort == 'recommended' %}chip-active{% endif %}"
-     href="{{ url_for('swipe', category_id=category.category_id, sort='recommended', supplier=supplier.code if supplier else None) }}">
-    {{ icon('star', 16) }} Most recommended
-  </a>
-  <a class="chip {% if sort == 'near' %}chip-active{% endif %}"
-     href="{{ url_for('swipe', category_id=category.category_id, sort='near', supplier=supplier.code if supplier else None) }}">
-    {{ icon('pin', 16) }} Closest to me{% if user_city %} ({{ user_city }}){% endif %}
-  </a>
-</div>
+<form method="get" class="swipe-search" action="{{ url_for('swipe', category_id=category.category_id) }}">
+  {% if supplier %}<input type="hidden" name="supplier" value="{{ supplier.code }}">{% endif %}
+  <span class="cmd-search-icon" aria-hidden="true">{{ icon('search', 18) }}</span>
+  <input type="search" name="q" value="{{ search or '' }}" placeholder="{{ t('search_supplier') }}" autocomplete="off">
+</form>
 
 <div class="swipe-stage"
      id="swipe-stage"
@@ -83,7 +31,7 @@
                  style="--depth: {{ loop.index0 }};"
                  tabindex="0"
                  role="button"
-                 aria-label="Tap to view {{ v.business_name }} profile">
+                 aria-label="Swipe {{ v.business_name }}">
           <div class="swipe-card-inner">
             <img class="swipe-card-img"
                  src="{{ photo_map.get(v.vendor_id) or 'https://picsum.photos/seed/' ~ v.vendor_id ~ '/800/600' }}"
@@ -97,98 +45,19 @@
                 {% if v.city %}{{ v.city }} · {% endif %}
                 {% if v.rating_average %}{{ icon('star-fill', 14, 'inline-star') }} {{ '%.1f'|format(v.rating_average) }}{% endif %}
               </p>
-              {% if v.description %}<p class="swipe-desc">{{ v.description }}</p>{% endif %}
               {% if v.price_min and v.price_max %}
-                <p class="muted small">₪{{ '%0.0f'|format(v.price_min) }} – ₪{{ '%0.0f'|format(v.price_max) }}</p>
+                <p class="muted small">₪{{ '%0.0f'|format(v.price_min) }} - ₪{{ '%0.0f'|format(v.price_max) }}</p>
               {% endif %}
             </div>
           </div>
         </article>
       {% endfor %}
     </div>
-
-    <div class="swipe-actions">
-      <button type="button" class="btn btn-ghost btn-large swipe-btn-skip" id="btn-skip" aria-label="Skip">{{ icon('close', 18) }} Skip</button>
-      <button type="button" class="btn btn-primary btn-large swipe-btn-like" id="btn-like" aria-label="Like">{{ icon('heart-fill', 18) }} Like</button>
-    </div>
   {% endif %}
 
   <div class="swipe-empty card" id="swipe-empty" {% if vendors %}hidden{% endif %}>
-    <h3>You've seen every {{ category.category_name }} option {{ icon('sparkle', 18) }}</h3>
-    <p class="muted">Try the other filter, or head back to your checklist.</p>
-    <div class="row" style="justify-content:center; margin-top:12px;">
-      {% if sort == 'recommended' %}
-        <a class="btn btn-ghost"   href="{{ url_for('swipe', category_id=category.category_id, sort='near', supplier=supplier.code if supplier else None) }}">Try closest to me</a>
-      {% else %}
-        <a class="btn btn-ghost"   href="{{ url_for('swipe', category_id=category.category_id, sort='recommended', supplier=supplier.code if supplier else None) }}">Try most recommended</a>
-      {% endif %}
-      <a class="btn btn-primary" href="{{ url_for('checklist') }}">Back to checklist</a>
-    </div>
+    <h3>{{ t('no_suppliers_found') }}</h3>
+    <p class="muted">{{ t('try_another_search') }}</p>
   </div>
 </div>
-
-{# ---------- Liked vendors in this category ---------- #}
-<section class="liked-strip liked-strip-swipe" id="liked-strip-swipe" aria-labelledby="liked-swipe-title"
-         {% if not liked_in_category %}style="display:none"{% endif %}>
-  <div class="liked-strip-head">
-    <h2 id="liked-swipe-title" class="liked-strip-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--rose)" aria-hidden="true" style="vertical-align:-2px;flex-shrink:0"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      Liked in {{ category.category_name }}
-      <span class="muted small liked-strip-count">·
-        <span id="liked-swipe-count">{{ liked_in_category|length }}</span>
-      </span>
-    </h2>
-    <a href="{{ url_for('favorites') }}" class="link small">View all →</a>
-  </div>
-  <div class="liked-scroll" id="liked-scroll-swipe">
-    {% for v in liked_in_category %}
-    <a class="liked-card" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}"
-       data-vendor-id="{{ v.vendor_id }}">
-      <div class="liked-card-img"
-           style="background-image:url('{{ v.photo_url or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/400/300') }}')"></div>
-      <div class="liked-card-body">
-        <span class="liked-card-name">{{ v.business_name }}</span>
-        {% if v.city %}<span class="liked-card-city muted small">{{ v.city }}</span>{% endif %}
-        {% if v.rating_average %}
-          <span class="liked-card-rating">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--gold)" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-            {{ '%.1f'|format(v.rating_average) }}
-          </span>
-        {% endif %}
-      </div>
-    </a>
-    {% endfor %}
-  </div>
-</section>
-
-{# ------------------------------------------------------------------ #}
-{#  Vendor profile sheet — populated by JS when a card is tapped       #}
-{# ------------------------------------------------------------------ #}
-<div class="vsheet-backdrop" id="vsheet-backdrop" hidden aria-hidden="true"></div>
-<aside class="vsheet" id="vsheet" role="dialog" aria-modal="true" aria-labelledby="vsheet-name" hidden>
-  <div class="vsheet-handle"></div>
-
-  <div class="vsheet-photo" id="vsheet-photo"></div>
-
-  <div class="vsheet-body">
-    <div class="vsheet-meta-top">
-      <span class="badge" id="vsheet-badge"></span>
-      <span class="vsheet-rating" id="vsheet-rating"></span>
-    </div>
-
-    <h2 class="vsheet-name" id="vsheet-name"></h2>
-
-    <p class="vsheet-city muted small" id="vsheet-city"></p>
-
-    <p class="vsheet-desc" id="vsheet-desc"></p>
-
-    <div class="vsheet-details" id="vsheet-details"></div>
-
-    <div class="vsheet-cta">
-      <button class="btn btn-ghost btn-large vsheet-skip" id="vsheet-skip">✕ Skip</button>
-      <button class="btn btn-primary btn-large vsheet-like" id="vsheet-like">♥ Like</button>
-      <a class="btn btn-ghost btn-sm vsheet-profile-link" id="vsheet-profile-link" target="_blank">Full profile →</a>
-    </div>
-  </div>
-</aside>
 {% endblock %}

@@ -14,6 +14,7 @@ from flask import (
     Flask, render_template, request, redirect, url_for,
     session, flash, abort, jsonify
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from authlib.integrations.flask_client import OAuth
@@ -21,6 +22,7 @@ from authlib.integrations.flask_client import OAuth
 from config import (
     SECRET_KEY,
     GOOGLE_PLACES_API_KEY,
+    VOWLY_PUBLIC_BASE_URL,
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
     FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET,
 )
@@ -34,6 +36,7 @@ from suppliers import (
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.teardown_appcontext(close_db)
 
 # ── OAuth ────────────────────────────────────────────────────────────────
@@ -56,7 +59,7 @@ if FACEBOOK_CLIENT_ID:
         authorize_url='https://www.facebook.com/dialog/oauth',
         access_token_url='https://graph.facebook.com/oauth/access_token',
         api_base_url='https://graph.facebook.com/v18.0/',
-        client_kwargs={'scope': 'email,public_profile'},
+        client_kwargs={'scope': 'email public_profile'},
     )
 
 
@@ -1188,6 +1191,13 @@ def logout():
 _OAUTH_PROVIDERS = {"google", "facebook"}
 
 
+def _oauth_redirect_uri(provider):
+    callback_path = url_for("auth_callback", provider=provider)
+    if VOWLY_PUBLIC_BASE_URL:
+        return f"{VOWLY_PUBLIC_BASE_URL}{callback_path}"
+    return url_for("auth_callback", provider=provider, _external=True)
+
+
 @app.route("/auth/<provider>")
 def auth_provider(provider):
     lang = _language_for(None)
@@ -1199,7 +1209,7 @@ def auth_provider(provider):
     except Exception:
         flash(_t(lang, "oauth_not_configured"), "error")
         return redirect(url_for("index"))
-    redirect_uri = url_for("auth_callback", provider=provider, _external=True)
+    redirect_uri = _oauth_redirect_uri(provider)
     return client.authorize_redirect(redirect_uri)
 
 

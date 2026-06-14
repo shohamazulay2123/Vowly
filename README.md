@@ -20,6 +20,25 @@ python app.py
 
 Then open <http://127.0.0.1:5000>.
 
+### Social login setup
+
+Set these environment variables before using Google or Facebook sign-in:
+
+```bash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+FACEBOOK_CLIENT_ID=...
+FACEBOOK_CLIENT_SECRET=...
+VOWLY_PUBLIC_BASE_URL=https://your-public-domain
+```
+
+Use the same public base URL in your provider dashboards. The app callback URLs are:
+
+- Google: `https://your-public-domain/auth/google/callback`
+- Facebook: `https://your-public-domain/auth/facebook/callback`
+
+For local development, `VOWLY_PUBLIC_BASE_URL` can stay unset and the app will use the active request URL, for example `http://127.0.0.1:5000/auth/google/callback`.
+
 ### Demo logins (after `python seed.py`)
 
 | Email | Password |

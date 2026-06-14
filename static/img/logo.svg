@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Vowly">
+  <!-- Vowly mark: two interlocked wedding rings (clay + gold) with a heart where they meet -->
+  <circle cx="24" cy="36" r="15" stroke="#BF5F43" stroke-width="4.2"/>
+  <circle cx="40" cy="30" r="15" stroke="#B58A33" stroke-width="4.2"/>
+  <!-- gem on the gold ring -->
+  <path d="M40 10.6 L43.6 15 L40 19.4 L36.4 15 Z" fill="#B58A33" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- heart in the overlap -->
+  <path transform="translate(26.6 28.2) scale(0.45)"
+        d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"
+        fill="#BF5F43"/>
+</svg>

@@ -1,42 +1,38 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_components.html" import page_hero, empty_state with context %}
 {% block content %}
+{{ page_hero(t('discover_vendors'), t('brand_tagline'), t('match'), url_for('swipe_pick_category'), t('start_swiping'), 'heart-fill') }}
 
-<header class="page-header">
-  <h1>Discover vendors</h1>
-  <a class="btn btn-primary" href="{{ url_for('swipe_pick_category') }}">Try swipe mode →</a>
-</header>
-
-<form method="get" class="card form-inline">
-  <input name="q" placeholder="Search business or description" value="{{ filters.q }}">
+<form method="get" class="filter-panel form-inline">
+  <input name="q" placeholder="{{ t('search_business') }}" value="{{ filters.q }}">
   <select name="category_id">
-    <option value="">All categories</option>
+    <option value="">{{ t('all_categories') }}</option>
     {% for c in categories %}
-      <option value="{{ c.category_id }}" {% if filters.category_id==c.category_id %}selected{% endif %}>{{ c.category_name }}</option>
+      <option value="{{ c.category_id }}" {% if filters.category_id==c.category_id %}selected{% endif %}>{{ td('category', c.category_name) }}</option>
     {% endfor %}
   </select>
   <select name="city">
-    <option value="">All cities</option>
+    <option value="">{{ t('all_cities') }}</option>
     {% for c in cities %}
-      <option value="{{ c.city }}" {% if filters.city==c.city %}selected{% endif %}>{{ c.city }}</option>
+      <option value="{{ c.city }}" {% if filters.city==c.city %}selected{% endif %}>{{ city_label(c.city) }}</option>
     {% endfor %}
   </select>
-  <input type="number" step="0.1" min="0" max="5" name="min_rating" placeholder="Min rating" value="{{ filters.min_rating or '' }}">
-  <input type="number" step="500" min="0" name="max_price" placeholder="Max price" value="{{ filters.max_price or '' }}">
-  <button class="btn btn-primary">Filter</button>
+  <input type="number" step="0.1" min="0" max="5" name="min_rating" placeholder="{{ t('min_rating') }}" value="{{ filters.min_rating or '' }}">
+  <input type="number" step="500" min="0" name="max_price" placeholder="{{ t('max_price') }}" value="{{ filters.max_price or '' }}">
+  <button class="btn btn-primary">{{ icon('search', 16) }}{{ t('filter') }}</button>
 </form>
 
-<div class="vendor-grid">
+<div class="vendor-grid match-grid">
   {% for v in vendors %}
-    <a class="vendor-card" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}">
-      <span class="badge">{{ v.category_name }}</span>
+    <a class="vendor-card match-lite-card" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}">
+      <span class="badge">{{ td('category', v.category_name) }}</span>
       <h4>{{ v.business_name }}</h4>
-      <p class="muted">{{ v.city }}</p>
+      <p class="muted">{{ city_label(v.city) }}</p>
       <p class="muted">{{ icon('star-fill', 12, 'inline-star') }} {{ v.rating_average }} · ₪{{ '%0.0f'|format(v.price_min) }}–₪{{ '%0.0f'|format(v.price_max) }}</p>
     </a>
   {% else %}
-    <p class="muted">No vendors match your filters.</p>
+    {{ empty_state(t('no_vendors'), '', url_for('home'), t('back_to_home'), 'search') }}
   {% endfor %}
 </div>
-
 {% endblock %}

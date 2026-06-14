@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, supplier_icon %}
+{% block title %}{{ t('home_title') }} · Vowly{% endblock %}
+{% block body_class %}home-page{% endblock %}
+
+{% block content %}
+
+{# ══════════════ Greeting + countdown ══════════════ #}
+<header class="hm-head">
+  <div class="hm-greet">
+    <p class="hm-eyebrow">
+      {% set h = now.hour %}
+      {{ t('good_morning') if h < 12 else (t('good_afternoon') if h < 18 else t('good_evening')) }}
+    </p>
+    <h1 class="hm-title">
+      {% if partner_name %}
+        {{ t('home_greeting_pair').format(name=(user.full_name or 'there').split(' ')[0], partner=partner_name.split(' ')[0]) }}
+      {% else %}
+        {{ t('home_greeting').format(name=(user.full_name or 'there').split(' ')[0]) }}
+      {% endif %}
+    </h1>
+  </div>
+
+  {% if days_until_wedding is not none and days_until_wedding >= 0 %}
+    <div class="hm-count">
+      <span class="hm-count-num">{{ days_until_wedding }}</span>
+      <span class="hm-count-cap">
+        {{ t('day_to_go') if days_until_wedding == 1 else t('days_to_go') }}
+        <span class="hm-count-date">{{ date_label(wedding.wedding_date) }}</span>
+      </span>
+    </div>
+  {% elif days_until_wedding is not none %}
+    <p class="hm-past">{{ t('mazel_tov_past') }} 🤍</p>
+  {% else %}
+    <a class="hm-set-date" href="{{ url_for('wedding_profile') }}">
+      {{ icon('sparkle', 15) }} {{ t('add_wedding_date') }}
+    </a>
+  {% endif %}
+</header>
+
+{# ══════════════ NBA: Next Best Action ══════════════ #}
+{% if nba %}
+<a class="hm-next hm-nba-{{ nba.phase }}" href="{{ nba.route }}">
+  <span class="hm-next-ico">
+    {% if nba.phase == 'venue' %}{{ icon('rings', 24) }}
+    {% elif nba.phase == 'wedding_day' %}{{ icon('rings', 24) }}
+    {% elif nba.phase == 'wedding_month' %}{{ icon('sparkle', 24) }}
+    {% elif nba.phase == 'guests' %}{{ icon('heart', 24) }}
+    {% else %}{{ icon('sparkle', 24) }}{% endif %}
+  </span>
+  <span class="hm-next-body">
+    <span class="hm-next-label">{{ t('next_step_label') }}</span>
+    <strong class="hm-next-title">{{ nba.title }}</strong>
+  </span>
+  <span class="hm-next-cta" aria-hidden="true">{{ icon('arrow-right' if text_dir == 'ltr' else 'arrow-left', 18) }}</span>
+</a>
+{% else %}
+<div class="hm-next hm-next-done">
+  <span class="hm-next-ico">{{ icon('rings', 24) }}</span>
+  <span class="hm-next-body">
+    <span class="hm-next-label">{{ t('all_set') }}</span>
+    <strong class="hm-next-title">{{ t('all_set_sub') }}</strong>
+  </span>
+</div>
+{% endif %}
+
+{# ══════════════ Quick stats ══════════════ #}
+<section class="hm-stats" aria-label="{{ t('dash_overview') }}">
+  <a class="hm-stat" href="{{ url_for('plan') }}">
+    <span class="hm-stat-num">{{ overall.booked }}<small>/{{ overall.total }}</small></span>
+    <span class="hm-stat-lbl">{{ t('stat_completed') }}</span>
+  </a>
+  <a class="hm-stat" href="{{ url_for('appointments') }}">
+    <span class="hm-stat-num">{{ appt_count }}</span>
+    <span class="hm-stat-lbl">{{ t('stat_meetings') }}</span>
+  </a>
+  <a class="hm-stat" href="{{ url_for('favorites') }}">
+    <span class="hm-stat-num">{{ liked_count }}</span>
+    <span class="hm-stat-lbl">{{ t('stat_favorites') }}</span>
+  </a>
+</section>
+
+{# ══════════════ Wedding month mode ══════════════ #}
+{% if wedding_month_mode and days_until_wedding >= 0 %}
+<section class="hm-card hm-wedding-month">
+  <div class="hm-card-head">
+    <h2>{{ t('wedding_month_mode') }}</h2>
+    <a href="{{ url_for('plan') }}" class="hm-card-link">{{ t('see_plan') }}</a>
+  </div>
+  <div class="wedding-month-grid">
+    <a class="wm-tile" href="{{ url_for('plan') }}">
+      <span class="wm-icon">{{ icon('check', 20) }}</span>
+      <span>{{ t('confirm_suppliers') }}</span>
+    </a>
+    <a class="wm-tile" href="{{ url_for('guests') }}">
+      <span class="wm-icon">{{ icon('heart', 20) }}</span>
+      <span>{{ t('guests') }}</span>
+    </a>
+    <a class="wm-tile" href="{{ url_for('budget') }}">
+      <span class="wm-icon">{{ icon('sparkle', 20) }}</span>
+      <span>{{ t('budget_title') }}</span>
+    </a>
+    <a class="wm-tile" href="{{ url_for('appointments') }}">
+      <span class="wm-icon">{{ icon('planner', 20) }}</span>
+      <span>{{ t('appointments') }}</span>
+    </a>
+  </div>
+</section>
+{% endif %}
+
+{# ══════════════ Guest summary ══════════════ #}
+{% if guest_stats and guest_stats.total > 0 %}
+<section class="hm-card">
+  <div class="hm-card-head">
+    <h2>{{ t('guests') }}</h2>
+    <a href="{{ url_for('guests') }}" class="hm-card-link">{{ t('see_all') }}</a>
+  </div>
+  <div class="hm-guest-stats">
+    <div class="hm-stat">
+      <span class="hm-stat-num">{{ guest_stats.total }}</span>
+      <span class="hm-stat-lbl">{{ t('total_guests') }}</span>
+    </div>
+    <div class="hm-stat">
+      <span class="hm-stat-num">{{ guest_stats.coming or 0 }}</span>
+      <span class="hm-stat-lbl">{{ t('confirmed_coming') }}</span>
+    </div>
+    <div class="hm-stat">
+      <span class="hm-stat-num">{{ guest_stats.unanswered or 0 }}</span>
+      <span class="hm-stat-lbl">{{ t('not_answered') }}</span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ══════════════ Budget summary ══════════════ #}
+{% if budget_stats and budget_stats.estimated %}
+<section class="hm-card">
+  <div class="hm-card-head">
+    <h2>{{ t('budget_title') }}</h2>
+    <a href="{{ url_for('budget') }}" class="hm-card-link">{{ t('see_all') }}</a>
+  </div>
+  <div class="hm-budget-row">
+    <div class="hm-bstat">
+      <span class="hm-bstat-lbl">{{ t('budget_total_estimated') }}</span>
+      <span class="hm-bstat-num">₪{{ '{:,.0f}'.format(budget_stats.estimated or 0) }}</span>
+    </div>
+    <div class="hm-bstat">
+      <span class="hm-bstat-lbl">{{ t('budget_total_paid') }}</span>
+      <span class="hm-bstat-num">₪{{ '{:,.0f}'.format(budget_stats.paid or 0) }}</span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ══════════════ Vendor categories ══════════════ #}
+{% set pref = ['venue','catering','dj','photographer','florist','makeup','bar','groom_suit','bride_dress','hair_stylist','videographer'] %}
+{% set vc = namespace(items=[]) %}
+{% for code in pref %}
+  {% if sup_by_code.get(code) and code_to_category_id.get(code) and vc.items | length < 6 %}
+    {% set vc.items = vc.items + [code] %}
+  {% endif %}
+{% endfor %}
+{# Wedding-themed representative images per category #}
+{% set cat_images = {
+  'venue':        'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=500&q=75',
+  'catering':     'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&q=75',
+  'dj':           'https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=500&q=75',
+  'photographer': 'https://images.unsplash.com/photo-1502920514313-52581002a659?w=500&q=75',
+  'florist':      'https://images.unsplash.com/photo-1487530811015-780780e6e4e6?w=500&q=75',
+  'makeup':       'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=75',
+  'bar':          'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=75',
+  'groom_suit':   'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=500&q=75',
+  'bride_dress':  'https://images.unsplash.com/photo-1594552072238-b8a33785b6cd?w=500&q=75',
+  'hair_stylist': 'https://images.unsplash.com/photo-1560066984-138daaa4e4e1?w=500&q=75',
+  'videographer': 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&q=75'
+} %}
+{% if vc.items %}
+<section class="hm-card vcat">
+  <div class="hm-card-head">
+    <h2>{{ t('vendor_categories') }}</h2>
+    <a href="{{ url_for('discover') }}" class="hm-card-link">{{ t('browse_all') }}</a>
+  </div>
+  <div class="vcat-grid">
+    {% for code in vc.items %}
+      {% set s = sup_by_code[code] %}
+      <a class="vcat-tile status-{{ s.status | replace(' ', '-') | lower }}"
+         href="{{ url_for('discover', category_id=code_to_category_id[code]) }}"
+         style="background-image: url('{{ cat_images.get(code, 'https://picsum.photos/seed/' ~ code ~ '/500/400') }}')">
+        <span class="vcat-ico">{{ supplier_icon(code, 20) }}</span>
+        <strong class="vcat-name">{{ supplier_label(s) }}</strong>
+        <span class="vcat-cta">
+          {% if s.status == 'Booked' %}
+            <span class="vcat-done">{{ icon('check', 13) }} {{ td('status', 'Booked') }}</span>
+          {% else %}
+            {{ t('start_swiping') }} {{ icon('arrow-right' if text_dir == 'ltr' else 'arrow-left', 13) }}
+          {% endif %}
+        </span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ══════════════ Recently liked ══════════════ #}
+<section class="hm-card">
+  <div class="hm-card-head">
+    <h2>{{ t('recently_liked') }}</h2>
+    {% if liked_vendors %}
+      <a href="{{ url_for('favorites') }}" class="hm-card-link">{{ t('see_all') }}</a>
+    {% endif %}
+  </div>
+  {% if liked_vendors %}
+    <div class="liked-scroll">
+      {% for v in liked_vendors %}
+        <a class="liked-card" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}">
+          <div class="liked-card-img" style="background-image:url('{{ v.photo_url or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/360/280') }}')"></div>
+          <div class="liked-card-body">
+            <span class="liked-card-name">{{ v.business_name }}</span>
+            <span class="liked-card-city muted small">{{ td('category', v.category_name) }}</span>
+            {% if v.rating_average %}
+              <span class="liked-card-rating">{{ icon('star-fill', 12, 'inline-star') }} {{ '%.1f'|format(v.rating_average) }}</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <a class="hm-liked-empty" href="{{ url_for('discover') }}">
+      <span class="hm-liked-empty-ico">{{ icon('heart', 20) }}</span>
+      <span class="hm-liked-empty-txt">{{ t('start_swiping') }}</span>
+      {{ icon('arrow-right' if text_dir == 'ltr' else 'arrow-left', 16) }}
+    </a>
+  {% endif %}
+</section>
+
+{% endblock %}

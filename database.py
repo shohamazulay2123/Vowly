@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS users (
     partner_name   TEXT,
     partner_email  TEXT,
     partner_phone  TEXT,
-    language       TEXT DEFAULT 'en',
+    language       TEXT DEFAULT 'he',
     distance_km    INTEGER DEFAULT 50,
     created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS wedding_profiles (
     budget                  REAL,
     city                    TEXT,
     venue_type_preference   TEXT,
+    ceremony_route          TEXT,
+    price_per_guest         REAL,
     created_at              TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -218,6 +220,39 @@ CREATE TABLE IF NOT EXISTS wedding_supplier_status (
     PRIMARY KEY (wedding_id, supplier_code),
     FOREIGN KEY (wedding_id) REFERENCES wedding_profiles(wedding_id) ON DELETE CASCADE
 );
+
+-- 14. GUESTS
+CREATE TABLE IF NOT EXISTS guests (
+    guest_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    wedding_id        INTEGER NOT NULL,
+    full_name         TEXT NOT NULL,
+    phone             TEXT,
+    side              TEXT,
+    group_name        TEXT,
+    rsvp_status       TEXT NOT NULL DEFAULT 'unknown',
+    table_number      TEXT,
+    meal_notes        TEXT,
+    gift_amount       REAL,
+    invitation_sent   INTEGER NOT NULL DEFAULT 0,
+    notes             TEXT,
+    created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (wedding_id) REFERENCES wedding_profiles(wedding_id) ON DELETE CASCADE
+);
+
+-- 15. WEDDING BUDGET
+CREATE TABLE IF NOT EXISTS wedding_budget (
+    budget_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    wedding_id        INTEGER NOT NULL,
+    category_label    TEXT NOT NULL,
+    estimated_amount  REAL NOT NULL DEFAULT 0,
+    actual_amount     REAL DEFAULT 0,
+    paid_amount       REAL DEFAULT 0,
+    due_date          TEXT,
+    payment_status    TEXT NOT NULL DEFAULT 'Not paid',
+    notes             TEXT,
+    created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (wedding_id) REFERENCES wedding_profiles(wedding_id) ON DELETE CASCADE
+);
 """
 
 
@@ -233,10 +268,31 @@ def init_db():
         ("partner_name",  "ALTER TABLE users ADD COLUMN partner_name TEXT"),
         ("partner_email", "ALTER TABLE users ADD COLUMN partner_email TEXT"),
         ("partner_phone", "ALTER TABLE users ADD COLUMN partner_phone TEXT"),
-        ("language",      "ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'en'"),
+        ("language",      "ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'he'"),
         ("distance_km",   "ALTER TABLE users ADD COLUMN distance_km INTEGER DEFAULT 50"),
     ):
         if col not in existing:
+            conn.execute(ddl)
+
+    # Hebrew is now the product default. Existing English/unset users move to
+    # Hebrew once; they can still switch back to English in Settings.
+    conn.execute("UPDATE users SET language='he' WHERE language IS NULL OR language='' OR language='en'")
+
+    # --- Lightweight migrations: add new columns to existing wedding_profiles ---
+    wp_existing = {row[1] for row in conn.execute("PRAGMA table_info(wedding_profiles)").fetchall()}
+    for col, ddl in (
+        ("ceremony_route",  "ALTER TABLE wedding_profiles ADD COLUMN ceremony_route TEXT"),
+        ("price_per_guest", "ALTER TABLE wedding_profiles ADD COLUMN price_per_guest REAL"),
+    ):
+        if col not in wp_existing:
+            conn.execute(ddl)
+
+    # --- Lightweight migrations: add new columns to existing selected_vendors ---
+    sv_existing = {row[1] for row in conn.execute("PRAGMA table_info(selected_vendors)").fetchall()}
+    for col, ddl in (
+        ("guest_count", "ALTER TABLE selected_vendors ADD COLUMN guest_count INTEGER"),
+    ):
+        if col not in sv_existing:
             conn.execute(ddl)
 
     conn.commit()

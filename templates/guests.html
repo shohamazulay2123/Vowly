@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('guest_list') }} · Vowly{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <h1>{{ t('guest_list') }}</h1>
+  {% if stats and stats.total > 0 %}
+  <div class="guest-stats-bar">
+    <span class="gs-item"><strong>{{ stats.total }}</strong> {{ t('total_guests') }}</span>
+    <span class="gs-sep">·</span>
+    <span class="gs-item gs-coming"><strong>{{ stats.coming or 0 }}</strong> {{ t('confirmed_coming') }}</span>
+    <span class="gs-sep">·</span>
+    <span class="gs-item"><strong>{{ stats.unanswered or 0 }}</strong> {{ t('not_answered') }}</span>
+  </div>
+  {% endif %}
+</header>
+
+{# Add guest form #}
+<section class="settings-panel">
+  <h2>{{ t('add_guest') }}</h2>
+  <form method="post" class="form">
+    <div class="form-row">
+      <label>{{ t('full_name') }} *
+        <input name="full_name" required placeholder="{{ t('full_name') }}">
+      </label>
+      <label>{{ t('guest_phone') }}
+        <input name="phone" type="tel" placeholder="{{ t('guest_phone') }}">
+      </label>
+    </div>
+    <div class="form-row">
+      <label>{{ t('guest_side') }}
+        <select name="side">
+          <option value="">—</option>
+          {% for sv in ['bride','groom','shared','family','work','friends'] %}
+            <option value="{{ sv }}">{{ t('side_' ~ sv) }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t('guest_group') }}
+        <input name="group_name" placeholder="{{ t('guest_group') }}">
+      </label>
+    </div>
+    <div class="form-row">
+      <label>{{ t('rsvp_status') }}
+        <select name="rsvp_status">
+          {% for rv in ['unknown','invited','coming','not_coming','maybe','needs_follow_up'] %}
+            <option value="{{ rv }}">{{ t('rsvp_' ~ rv) }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t('meal_notes') }}
+        <input name="meal_notes" placeholder="{{ t('meal_notes') }}">
+      </label>
+    </div>
+    <button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ t('add_guest') }}</button>
+  </form>
+</section>
+
+{# Guest list #}
+{% if rows %}
+<section class="settings-panel">
+  <div class="guest-list">
+    {% for g in rows %}
+    <div class="guest-row">
+      <div class="guest-info">
+        <strong class="guest-name">{{ g.full_name }}</strong>
+        {% if g.phone %}<span class="muted small">{{ g.phone }}</span>{% endif %}
+        {% if g.side %}<span class="badge">{{ t('side_' ~ g.side) }}</span>{% endif %}
+        {% if g.group_name %}<span class="muted small">{{ g.group_name }}</span>{% endif %}
+        {% if g.meal_notes %}<span class="muted small">{{ g.meal_notes }}</span>{% endif %}
+      </div>
+      <div class="guest-actions">
+        <form method="post" action="{{ url_for('guests_update', gid=g.guest_id) }}" class="guest-rsvp-form">
+          <select name="rsvp_status" onchange="this.form.submit()" class="rsvp-select rsvp-{{ g.rsvp_status }}">
+            {% for rv in ['unknown','invited','coming','not_coming','maybe','needs_follow_up'] %}
+              <option value="{{ rv }}" {% if g.rsvp_status == rv %}selected{% endif %}>{{ t('rsvp_' ~ rv) }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <form method="post" action="{{ url_for('guests_delete', gid=g.guest_id) }}" onsubmit="return confirm('{{ t('remove_selected_confirm') }}')">
+          <button class="btn btn-ghost btn-sm btn-icon" type="submit">{{ icon('close', 14) }}</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">{{ icon('heart', 40) }}</div>
+  <p class="muted">{{ t('no_guests') }}</p>
+</div>
+{% endif %}
+{% endblock %}

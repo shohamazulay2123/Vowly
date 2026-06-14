@@ -1,53 +1,53 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_components.html" import page_hero, empty_state with context %}
 {% block content %}
+{{ page_hero(t('appointments'), t('brand_tagline'), t('schedule')) }}
 
-<header class="page-header">
-  <h1>Appointments</h1>
-</header>
-
-<div class="card">
-  <h3>Schedule new</h3>
+<section class="data-panel">
+  <h3>{{ t('schedule_new') }}</h3>
   <form method="post" class="form form-inline">
     <select name="vendor_id" required>
-      <option value="">Select vendor…</option>
+      <option value="">{{ t('select_vendor_placeholder') }}</option>
       {% for v in vendors %}
-        <option value="{{ v.vendor_id }}">{{ v.business_name }} ({{ v.category_name }})</option>
+        <option value="{{ v.vendor_id }}">{{ v.business_name }} ({{ td('category', v.category_name) }})</option>
       {% endfor %}
     </select>
     <input type="datetime-local" name="appointment_date" required>
-    <input name="location" placeholder="Location">
-    <input name="notes" placeholder="Notes">
-    <button class="btn btn-primary">Schedule</button>
+    <input name="location" placeholder="{{ t('location') }}">
+    <input name="notes" placeholder="{{ t('notes') }}">
+    <button class="btn btn-primary">{{ icon('check', 16) }}{{ t('schedule') }}</button>
   </form>
-</div>
+</section>
 
-<div class="card">
+<section class="data-panel">
   {% if rows %}
-  <table class="table">
-    <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Location</th><th>Status</th></tr></thead>
-    <tbody>
-      {% for a in rows %}
-        <tr>
-          <td>{{ a.appointment_date }}</td>
-          <td>{{ a.business_name }}</td>
-          <td><span class="badge">{{ a.category_name }}</span></td>
-          <td>{{ a.location or '' }}</td>
-          <td>
-            <form method="post" action="{{ url_for('appointments_status', aid=a.appointment_id) }}" class="form-inline">
-              <select name="status" onchange="this.form.submit()">
-                {% for s in ['Scheduled','Completed','Cancelled'] %}
-                  <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-              </select>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>{{ t('date') }}</th><th>{{ t('vendor') }}</th><th>{{ t('category') }}</th><th>{{ t('location') }}</th><th>{{ t('status') }}</th></tr></thead>
+      <tbody>
+        {% for a in rows %}
+          <tr>
+            <td>{{ a.appointment_date }}</td>
+            <td>{{ a.business_name }}</td>
+            <td><span class="badge">{{ td('category', a.category_name) }}</span></td>
+            <td>{{ a.location or '' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('appointments_status', aid=a.appointment_id) }}" class="form-inline">
+                <select name="status" onchange="this.form.submit()">
+                  {% for s in ['Scheduled','Completed','Cancelled'] %}
+                    <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ td('status', s) }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-    <p class="muted">No appointments yet.</p>
+    {{ empty_state(t('no_appointments'), '', '', '', 'calendar') }}
   {% endif %}
-</div>
-
+</section>
 {% endblock %}

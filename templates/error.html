@@ -1,8 +1,5 @@
 {% extends "base.html" %}
+{% from "_components.html" import empty_state with context %}
 {% block content %}
-<div class="card" style="text-align:center;">
-  <h1>{{ code }}</h1>
-  <p class="muted">{{ message }}</p>
-  <a class="btn btn-primary" href="{{ url_for('index') }}">Back home</a>
-</div>
+{{ empty_state(code, message, url_for('index'), t('back_home'), 'sparkle') }}
 {% endblock %}

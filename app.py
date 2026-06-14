@@ -4,16 +4,26 @@ Vowly - Flask wedding planning app.
 
 import os
 import math
+import re
+import requests
 from datetime import datetime
 from functools import wraps
+from urllib.parse import quote
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    session, flash, abort
+    session, flash, abort, jsonify
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from config import SECRET_KEY
+from authlib.integrations.flask_client import OAuth
+
+from config import (
+    SECRET_KEY,
+    GOOGLE_PLACES_API_KEY,
+    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+    FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET,
+)
 from database import init_db, close_db, query, execute, get_db
 from suppliers import (
     SUPPLIERS, SUPPLIERS_BY_CODE, GROUPS, STATUSES, DEFAULT_STATUS,
@@ -26,10 +36,37 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.teardown_appcontext(close_db)
 
+# ── OAuth ────────────────────────────────────────────────────────────────
+oauth = OAuth(app)
+
+if GOOGLE_CLIENT_ID:
+    oauth.register(
+        name='google',
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'},
+    )
+
+if FACEBOOK_CLIENT_ID:
+    oauth.register(
+        name='facebook',
+        client_id=FACEBOOK_CLIENT_ID,
+        client_secret=FACEBOOK_CLIENT_SECRET,
+        authorize_url='https://www.facebook.com/dialog/oauth',
+        access_token_url='https://graph.facebook.com/oauth/access_token',
+        api_base_url='https://graph.facebook.com/v18.0/',
+        client_kwargs={'scope': 'email,public_profile'},
+    )
+
+
+DEFAULT_LANGUAGE = "he"
+
 
 TRANSLATIONS = {
     "en": {
         "app_title": "Vowly · Plan your perfect wedding",
+        "brand_tagline": "Match with the suppliers that fit your wedding.",
         "home": "Home",
         "liked": "Liked",
         "settings": "Settings",
@@ -64,9 +101,333 @@ TRANSLATIONS = {
         "search_supplier": "Search for supplier",
         "no_suppliers_found": "No suppliers found",
         "try_another_search": "Try another search.",
+        "open_menu": "Open menu",
+        "main_navigation": "Main navigation",
+        "close": "Close",
+        "back": "Back",
+        "back_home": "Back home",
+        "back_to_home": "Back to Home",
+        "save": "Save",
+        "saved": "Saved",
+        "could_not_save": "Could not save",
+        "view": "View",
+        "select": "Select",
+        "remove": "Remove",
+        "new": "New",
+        "match": "Match",
+        "skip": "Skip",
+        "like": "Like",
+        "more_info": "More info",
+        "view_profile": "View profile",
+        "see_all": "See all",
+        "start_swiping": "Start swiping",
+        "no_liked_vendors": "No liked vendors yet",
+        "liked_subtitle": "Vendors you liked while swiping. Pick the ones you want to shortlist.",
+        "match_queue": "Match queue",
+        "tap_card_hint": "Tap a card for details · drag or use arrows",
+        "home_greeting": "Hi {name}",
+        "home_greeting_pair": "Hi {name} & {partner}",
+        "mazel_tov_past": "Mazel tov — your wedding has passed",
+        "booked_ratio": "{booked} / {total} booked",
+        "category_meta": "{booked}/{total} booked · {progress} in progress",
+        "next_match": "Next matches",
+        "profile_title_create": "Create your wedding profile",
+        "profile_title_edit": "Edit your wedding profile",
+        "partner_name": "Partner's name",
+        "wedding_date": "Wedding date",
+        "estimated_guests": "Estimated guests",
+        "total_budget": "Total budget",
+        "city": "City",
+        "venue_type": "Venue type preference",
+        "choose": "Choose",
+        "save_changes": "Save changes",
+        "create_profile": "Create profile",
+        "discover_vendors": "Discover vendors",
+        "search_business": "Search business or description",
+        "all_categories": "All categories",
+        "all_cities": "All cities",
+        "min_rating": "Min rating",
+        "max_price": "Max price",
+        "filter": "Filter",
+        "no_vendors": "No vendors match your filters.",
+        "about": "About",
+        "contact": "Contact",
+        "reviews": "Reviews",
+        "no_reviews": "No reviews yet",
+        "leave_first_review": "leave the first one",
+        "remove_favorite": "Remove favorite",
+        "add_favorite": "Add to favorites",
+        "select_vendor": "Select vendor",
+        "selected_vendors": "Selected vendors",
+        "agreed_price": "Agreed price",
+        "notes": "Notes",
+        "vendor": "Vendor",
+        "category": "Category",
+        "status": "Status",
+        "no_selected_vendors": "You have not selected any vendors yet.",
+        "remove_selected_confirm": "Remove from selected?",
+        "chosen": "Chosen",
+        "per_meal": "per meal",
+        "guest_count_est": "Estimated guests",
+        "price_per_meal": "Price per meal (₪)",
+        "venue_select_title": "Venue details",
+        "confirm_select": "Add to shortlist",
+        "cancel": "Cancel",
+        "appointments": "Appointments",
+        "schedule_new": "Schedule new",
+        "select_vendor_placeholder": "Select vendor...",
+        "location": "Location",
+        "schedule": "Schedule",
+        "date": "Date",
+        "no_appointments": "No appointments yet.",
+        "leave_review": "Leave a review",
+        "tell_couples": "Tell other couples what you thought",
+        "post_review": "Post review",
+        "latest_reviews": "Latest reviews",
+        "analytics": "Analytics",
+        "analytics_subtitle": "Live planning data from the Vowly database.",
+        "users": "Users",
+        "weddings": "Weddings",
+        "vendors": "Vendors",
+        "vendors_per_category": "Vendors per category",
+        "avg_rating_per_category": "Average rating per category",
+        "most_liked_vendors": "Most liked vendors",
+        "most_skipped_vendors": "Most skipped vendors",
+        "popular_categories": "Popular categories",
+        "top_cities": "Top cities",
+        "checklist_progress": "Checklist progress",
+        "budget_estimated_actual": "Budget estimated vs actual",
+        "elite_vendors": "Elite vendors",
+        "interactions": "Interactions",
+        "likes": "Likes",
+        "skips": "Skips",
+        "average_rating": "Avg rating",
+        "completed": "Completed",
+        "total": "Total",
+        "actual": "Actual",
+        "estimated": "Estimated",
+        "couple": "Couple",
+        "onboarding_title": "Welcome to Vowly{name}",
+        "onboarding_subtitle": "Choose the supplier matches you want to start with. We will mark them as in progress and build your planning deck around them.",
+        "showing_role": "Showing suppliers relevant to: {role}.",
+        "suppliers_count": "{count} suppliers",
+        "skip_home": "Skip and see Home",
+        "start_planning": "Start planning",
+        "auth_headline": "Find the suppliers worth saying yes to.",
+        "auth_login_title": "Welcome back",
+        "auth_login_subtitle": "Log in to keep matching with the right suppliers.",
+        "auth_register_title": "Create your account",
+        "auth_register_subtitle": "Start planning your wedding in minutes.",
+        "email": "Email",
+        "password": "Password",
+        "full_name": "Full name",
+        "phone": "Phone",
+        "select_city": "Select city...",
+        "i_am_the": "I am the",
+        "select_one": "Select one...",
+        "bride": "Bride",
+        "groom": "Groom",
+        "partner_details": "Your partner's details",
+        "partner_email": "Partner's email",
+        "partner_phone": "Partner's phone",
+        "create_account": "Create account",
+        "new_to_vowly": "New to Vowly?",
+        "create_account_link": "Create an account",
+        "already_account": "Already have an account?",
+        "login_required": "Please log in to continue.",
+        "session_expired": "Session expired. Please log in again.",
+        "missing_register_fields": "Name, email and password are required.",
+        "missing_partner_fields": "Please fill in your partner's name, email and phone.",
+        "email_registered": "That email is already registered.",
+        "welcome_setup": "Welcome to Vowly! Let's set up your match dashboard.",
+        "welcome_back_name": "Welcome back, {name}!",
+        "invalid_login": "Invalid email or password.",
+        "oauth_failed": "Sign-in failed. Please try again.",
+        "oauth_no_email": "Could not retrieve your email address from that account.",
+        "oauth_not_configured": "That sign-in method is not configured yet.",
+        "continue_google": "Continue with Google",
+        "continue_facebook": "Continue with Facebook",
+        "continue_apple": "Continue with Apple",
+        "or_divider": "or",
+        "logged_out": "You have been logged out.",
+        "profile_updated": "Wedding profile updated.",
+        "profile_created": "Wedding profile created. Welcome to Vowly!",
+        "picked_suppliers": "Great. We marked {count} supplier(s) as in progress.",
+        "favorite_added": "Added to favorites.",
+        "favorite_removed": "Removed from favorites.",
+        "shortlist_added": "Vendor added to your shortlist.",
+        "selection_updated": "Selection updated.",
+        "appointment_required": "Vendor and date are required.",
+        "appointment_scheduled": "Appointment scheduled.",
+        "review_required": "Vendor and a 1-5 rating are required.",
+        "review_posted": "Review posted.",
+        "page_not_found": "Page not found",
+        "server_error": "Something went wrong",
+        # --- Vowly 2.0 ---
+        "plan": "Plan",
+        "discover": "Discover",
+        "profile": "Profile",
+        "plan_title": "Your plan",
+        "plan_subtitle": "Every supplier for your big day, in one list.",
+        "discover_title": "Discover",
+        "discover_subtitle": "Swipe through vendors and like the ones you'd say yes to.",
+        "left_in_queue": "{count} to review",
+        "all_caught_up": "All caught up!",
+        "caught_up_sub": "You've seen every vendor here. Pick another category to keep matching.",
+        "your_wedding": "Your wedding",
+        "days_to_go": "days to go",
+        "day_to_go": "day to go",
+        "add_wedding_date": "Add your wedding date",
+        "planning_progress": "Planning progress",
+        "of_suppliers_booked": "{booked} of {total} booked",
+        "keep_matching": "Keep matching",
+        "view_full_plan": "See full plan",
+        "up_next": "Up next",
+        "recently_liked": "Recently liked",
+        "good_morning": "Good morning",
+        "good_afternoon": "Good afternoon",
+        "good_evening": "Good evening",
+        "step_of": "Step {step} of {total}",
+        "wizard_basics_title": "Tell us about your big day",
+        "wizard_basics_sub": "A few details so Vowly can tailor everything for you. You can change these anytime.",
+        "wizard_pick_title": "What do you want to tackle first?",
+        "wizard_pick_sub": "Pick a few suppliers to focus on. We'll build your matching queue around them.",
+        "next_step": "Next",
+        "skip_for_now": "Skip for now",
+        "wedding_details": "Wedding details",
+        "edit": "Edit",
+        "guests": "Guests",
+        "budget": "Budget",
+        "account": "Account",
+        "more_tools": "More tools",
+        "not_set": "Not set",
+        "next_appointment": "Next appointment",
+        "auth_welcome": "Say yes to the right suppliers.",
+        "auth_welcome_sub": "Vowly matches you with wedding vendors you'll love — swipe, shortlist, book.",
+        # ── Dashboard ──
+        "dash_overview": "Your wedding at a glance",
+        "stat_completed": "Tasks done",
+        "stat_in_progress": "In progress",
+        "stat_meetings": "Meetings",
+        "stat_favorites": "Saved",
+        "your_journey": "Your planning journey",
+        "upcoming_tasks": "Your upcoming tasks",
+        "all_tasks": "All tasks",
+        "tasks_all_done": "All caught up — nothing pending 🎉",
+        "recommended": "Recommended",
+        "vendor_categories": "Explore vendors",
+        "browse_all": "Browse all",
+        "next_step_label": "Your next step",
+        "next_step_book": "Find your {name}",
+        "continue_planning": "Continue planning",
+        "all_set": "You're all set",
+        "all_set_sub": "Every supplier is booked — time to celebrate!",
+        "stage_venue": "Choose venue",
+        "stage_vendors": "Vendors",
+        "stage_tasting": "Tastings",
+        "stage_invites": "Invitations",
+        "stage_seating": "Seating",
+        "stage_week": "Wedding week",
+        # NBA
+        "nba_set_date": "Set your wedding date",
+        "nba_set_date_sub": "Your timeline and every supplier reminder is built around it.",
+        "nba_set_guests": "Estimate your guest count",
+        "nba_set_guests_sub": "It shapes your venue search and budget formula.",
+        "nba_set_budget": "Set your total budget",
+        "nba_set_budget_sub": "We'll help you track every shekel.",
+        "nba_find_venue": "Choose 3–5 venues to visit",
+        "nba_find_venue_sub": "The venue fixes your date, guest capacity, catering, and every other vendor.",
+        "nba_core_vendor": "Find your {name}",
+        "nba_core_vendor_sub": "Good {name}s get booked months ahead — don't wait.",
+        "nba_ceremony_route": "Choose your ceremony route",
+        "nba_ceremony_route_sub": "Vowly will build the correct legal and ceremony checklist for you.",
+        "nba_rabbinate_docs": "Start your Rabbinate marriage file",
+        "nba_rabbinate_docs_sub": "Marriage registration and documents take time — start early.",
+        "nba_guest_list": "Create your guest list",
+        "nba_guest_list_sub": "Add names, sides, and contact details to track RSVPs.",
+        "nba_rsvp_followup": "Follow up with guests",
+        "nba_rsvp_followup_sub": "{count} guests haven't answered yet.",
+        "nba_wedding_month": "Wedding month — {days} days to go",
+        "nba_wedding_month_sub": "Confirm all suppliers, finalize seating, and clear unpaid balances.",
+        "nba_wedding_day": "Today is your wedding day!",
+        "nba_wedding_day_sub": "Focus on the timeline, supplier contacts, and your final checklist.",
+        # Guests
+        "guest_list": "Guest list",
+        "add_guest": "Add guest",
+        "no_guests": "No guests added yet.",
+        "guest_added": "Guest added.",
+        "guest_deleted": "Guest removed.",
+        "guest_updated": "Guest updated.",
+        "rsvp_unknown": "No answer",
+        "rsvp_invited": "Invited",
+        "rsvp_coming": "Coming",
+        "rsvp_not_coming": "Not coming",
+        "rsvp_maybe": "Maybe",
+        "rsvp_needs_follow_up": "Needs follow-up",
+        "rsvp_status": "RSVP status",
+        "side_bride": "Bride's side",
+        "side_groom": "Groom's side",
+        "side_shared": "Shared",
+        "side_family": "Family",
+        "side_work": "Work",
+        "side_friends": "Friends",
+        "total_guests": "Total guests",
+        "confirmed_coming": "Confirmed",
+        "not_answered": "No answer",
+        "invitation_sent_label": "Invite sent",
+        "meal_notes": "Meal notes",
+        "table_number": "Table",
+        "guest_notes": "Notes",
+        "guest_side": "Side",
+        "guest_group": "Group",
+        "guest_phone": "Phone",
+        # Budget
+        "budget_title": "Budget",
+        "budget_subtitle": "Track every cost from estimate to final payment.",
+        "add_budget_item": "Add item",
+        "budget_category": "Category",
+        "estimated_amount": "Estimated",
+        "actual_amount": "Actual",
+        "paid_amount": "Paid",
+        "remaining": "Remaining",
+        "due_date": "Due date",
+        "payment_status": "Payment",
+        "not_paid": "Not paid",
+        "deposit_paid": "Deposit paid",
+        "partially_paid": "Partially paid",
+        "paid_full": "Paid in full",
+        "budget_total_estimated": "Estimated total",
+        "budget_total_actual": "Committed",
+        "budget_total_paid": "Paid so far",
+        "budget_over": "Over budget",
+        "budget_under": "Under budget",
+        "budget_item_added": "Budget item added.",
+        "budget_item_updated": "Budget item updated.",
+        "budget_item_deleted": "Budget item removed.",
+        "price_per_guest": "Est. price per guest (₪)",
+        "next_payment_due": "Next payment due",
+        "no_budget_items": "No budget items yet.",
+        "budget_required_fields": "Category and estimated amount are required.",
+        # Ceremony
+        "ceremony_route": "Ceremony route",
+        "ceremony_route_label": "How are you getting married?",
+        "route_rabbinate": "Rabbinate",
+        "route_private_rabbi": "Private rabbi",
+        "route_civil_abroad": "Civil marriage abroad",
+        "route_utah_online": "Utah / online civil",
+        "route_symbolic": "Symbolic ceremony",
+        "route_other": "Other",
+        "route_unknown": "Not decided yet",
+        # Wedding month
+        "wedding_month_mode": "Wedding month",
+        "see_plan": "See full plan",
+        "see_guests": "See guest list",
+        "see_budget": "See budget",
+        "confirm_suppliers": "Confirm suppliers",
     },
     "he": {
         "app_title": "Vowly · תכנון חתונה מושלם",
+        "brand_tagline": "מאצ׳ים עם הספקים שמתאימים לחתונה שלכם.",
         "home": "בית",
         "liked": "מועדפים",
         "settings": "הגדרות",
@@ -101,7 +462,462 @@ TRANSLATIONS = {
         "search_supplier": "חיפוש ספק",
         "no_suppliers_found": "לא נמצאו ספקים",
         "try_another_search": "נסו חיפוש אחר.",
+        "open_menu": "פתיחת תפריט",
+        "main_navigation": "ניווט ראשי",
+        "close": "סגירה",
+        "back": "חזרה",
+        "back_home": "חזרה לבית",
+        "back_to_home": "חזרה לבית",
+        "save": "שמירה",
+        "saved": "נשמר",
+        "could_not_save": "לא הצלחנו לשמור",
+        "view": "צפייה",
+        "select": "בחירה",
+        "remove": "הסרה",
+        "new": "חדש",
+        "match": "מאצ׳",
+        "skip": "דילוג",
+        "like": "אהבתי",
+        "more_info": "עוד פרטים",
+        "view_profile": "צפייה בפרופיל",
+        "see_all": "לכל המועדפים",
+        "start_swiping": "לבחירה",
+        "no_liked_vendors": "עדיין אין ספקים שאהבתם",
+        "liked_subtitle": "ספקים שסימנתם בלב בזמן הסווייפ. מכאן בוחרים את מי להכניס לשורטליסט.",
+        "match_queue": "תור המאצ׳ים",
+        "tap_card_hint": "לחצו על כרטיס לפרטים · גררו או השתמשו בחצים",
+        "home_greeting": "היי {name}",
+        "home_greeting_pair": "היי {name} ו{partner}",
+        "mazel_tov_past": "מזל טוב — החתונה כבר הייתה",
+        "booked_ratio": "{booked} / {total} נסגרו",
+        "category_meta": "{booked}/{total} נסגרו · {progress} בתהליך",
+        "next_match": "המאצ׳ים הבאים",
+        "profile_title_create": "יצירת פרופיל חתונה",
+        "profile_title_edit": "עריכת פרופיל חתונה",
+        "partner_name": "שם בן/בת הזוג",
+        "wedding_date": "תאריך החתונה",
+        "estimated_guests": "מספר אורחים משוער",
+        "total_budget": "תקציב כולל",
+        "city": "עיר",
+        "venue_type": "העדפת סוג מקום",
+        "choose": "בחירה",
+        "save_changes": "שמירת שינויים",
+        "create_profile": "יצירת פרופיל",
+        "discover_vendors": "גילוי ספקים",
+        "search_business": "חיפוש עסק או תיאור",
+        "all_categories": "כל הקטגוריות",
+        "all_cities": "כל הערים",
+        "min_rating": "דירוג מינימלי",
+        "max_price": "מחיר מקסימלי",
+        "filter": "סינון",
+        "no_vendors": "אין ספקים שתואמים לסינון.",
+        "about": "על הספק",
+        "contact": "יצירת קשר",
+        "reviews": "ביקורות",
+        "no_reviews": "עדיין אין ביקורות",
+        "leave_first_review": "כתבו את הראשונה",
+        "remove_favorite": "הסרה מהמועדפים",
+        "add_favorite": "הוספה למועדפים",
+        "select_vendor": "בחירת ספק",
+        "selected_vendors": "ספקים שנבחרו",
+        "agreed_price": "מחיר שסוכם",
+        "notes": "הערות",
+        "vendor": "ספק",
+        "category": "קטגוריה",
+        "status": "סטטוס",
+        "no_selected_vendors": "עדיין לא בחרתם ספקים.",
+        "remove_selected_confirm": "להסיר מהנבחרים?",
+        "chosen": "נבחר",
+        "per_meal": "למנה",
+        "guest_count_est": "מספר אורחים משוער",
+        "price_per_meal": "מחיר למנה (₪)",
+        "venue_select_title": "פרטי האולם",
+        "confirm_select": "הוספה לנבחרים",
+        "cancel": "ביטול",
+        "appointments": "פגישות",
+        "schedule_new": "קביעת פגישה חדשה",
+        "select_vendor_placeholder": "בחרו ספק...",
+        "location": "מיקום",
+        "schedule": "קביעה",
+        "date": "תאריך",
+        "no_appointments": "עדיין אין פגישות.",
+        "leave_review": "כתיבת ביקורת",
+        "tell_couples": "ספרו לזוגות אחרים מה חשבתם",
+        "post_review": "פרסום ביקורת",
+        "latest_reviews": "ביקורות אחרונות",
+        "analytics": "אנליטיקה",
+        "analytics_subtitle": "נתוני תכנון חיים מתוך בסיס הנתונים של Vowly.",
+        "users": "משתמשים",
+        "weddings": "חתונות",
+        "vendors": "ספקים",
+        "vendors_per_category": "ספקים לפי קטגוריה",
+        "avg_rating_per_category": "דירוג ממוצע לפי קטגוריה",
+        "most_liked_vendors": "הספקים הכי אהובים",
+        "most_skipped_vendors": "הספקים שדולגו הכי הרבה",
+        "popular_categories": "קטגוריות פופולריות",
+        "top_cities": "ערים מובילות",
+        "checklist_progress": "התקדמות חתונות",
+        "budget_estimated_actual": "תקציב משוער מול בפועל",
+        "elite_vendors": "ספקים מצטיינים",
+        "interactions": "אינטראקציות",
+        "likes": "לייקים",
+        "skips": "דילוגים",
+        "average_rating": "דירוג ממוצע",
+        "completed": "הושלם",
+        "total": "סה״כ",
+        "actual": "בפועל",
+        "estimated": "משוער",
+        "couple": "זוג",
+        "onboarding_title": "ברוכים הבאים ל-Vowly{name}",
+        "onboarding_subtitle": "בחרו את הספקים שתרצו להתחיל איתם. נסמן אותם כבתהליך ונבנה סביבם את דק התכנון שלכם.",
+        "showing_role": "מציגים ספקים שרלוונטיים ל: {role}.",
+        "suppliers_count": "{count} ספקים",
+        "skip_home": "דילוג לבית",
+        "start_planning": "מתחילים לתכנן",
+        "auth_headline": "מוצאים את הספקים ששווה להגיד להם כן.",
+        "auth_login_title": "ברוכים השבים",
+        "auth_login_subtitle": "התחברו כדי להמשיך למצוא את הספקים הנכונים.",
+        "auth_register_title": "יצירת חשבון",
+        "auth_register_subtitle": "מתחילים לתכנן חתונה בכמה דקות.",
+        "email": "אימייל",
+        "password": "סיסמה",
+        "full_name": "שם מלא",
+        "phone": "טלפון",
+        "select_city": "בחרו עיר...",
+        "i_am_the": "אני",
+        "select_one": "בחרו...",
+        "bride": "כלה",
+        "groom": "חתן",
+        "partner_details": "פרטי בן/בת הזוג",
+        "partner_email": "אימייל בן/בת הזוג",
+        "partner_phone": "טלפון בן/בת הזוג",
+        "create_account": "יצירת חשבון",
+        "new_to_vowly": "חדשים ב-Vowly?",
+        "create_account_link": "צרו חשבון",
+        "already_account": "כבר יש לכם חשבון?",
+        "login_required": "כדי להמשיך צריך להתחבר.",
+        "session_expired": "הסשן פג. התחברו שוב בבקשה.",
+        "missing_register_fields": "שם, אימייל וסיסמה הם שדות חובה.",
+        "missing_partner_fields": "מלאו בבקשה שם, אימייל וטלפון של בן/בת הזוג.",
+        "email_registered": "האימייל הזה כבר רשום.",
+        "welcome_setup": "ברוכים הבאים ל-Vowly! בואו נבנה את דשבורד המאצ׳ים שלכם.",
+        "welcome_back_name": "ברוכים השבים, {name}!",
+        "invalid_login": "אימייל או סיסמה לא נכונים.",
+        "oauth_failed": "ההתחברות נכשלה. נסו שוב.",
+        "oauth_no_email": "לא הצלחנו לקבל את כתובת האימייל שלכם.",
+        "oauth_not_configured": "אמצעי כניסה זה עדיין לא מוגדר.",
+        "continue_google": "המשך עם Google",
+        "continue_facebook": "המשך עם Facebook",
+        "continue_apple": "המשך עם Apple",
+        "or_divider": "או",
+        "logged_out": "התנתקתם בהצלחה.",
+        "profile_updated": "פרופיל החתונה עודכן.",
+        "profile_created": "פרופיל החתונה נוצר. ברוכים הבאים ל-Vowly!",
+        "picked_suppliers": "מעולה. סימנו {count} ספקים כבתהליך.",
+        "favorite_added": "הספק נוסף למועדפים.",
+        "favorite_removed": "הספק הוסר מהמועדפים.",
+        "shortlist_added": "הספק נוסף לשורטליסט.",
+        "selection_updated": "הבחירה עודכנה.",
+        "appointment_required": "צריך לבחור ספק ותאריך.",
+        "appointment_scheduled": "הפגישה נקבעה.",
+        "review_required": "צריך לבחור ספק ודירוג בין 1 ל-5.",
+        "review_posted": "הביקורת פורסמה.",
+        "page_not_found": "העמוד לא נמצא",
+        "server_error": "משהו השתבש",
+        # --- Vowly 2.0 ---
+        "plan": "תכנון",
+        "discover": "גילוי",
+        "profile": "פרופיל",
+        "plan_title": "התוכנית שלכם",
+        "plan_subtitle": "כל הספקים ליום הגדול, ברשימה אחת.",
+        "discover_title": "גילוי",
+        "discover_subtitle": "החליקו בין ספקים וסמנו לייק לאלה שתגידו להם כן.",
+        "left_in_queue": "{count} לבדיקה",
+        "all_caught_up": "עברתם על הכול!",
+        "caught_up_sub": "ראיתם את כל הספקים כאן. בחרו קטגוריה אחרת כדי להמשיך.",
+        "your_wedding": "החתונה שלכם",
+        "days_to_go": "ימים נשארו",
+        "day_to_go": "יום נשאר",
+        "add_wedding_date": "הוסיפו תאריך חתונה",
+        "planning_progress": "התקדמות התכנון",
+        "of_suppliers_booked": "{booked} מתוך {total} נסגרו",
+        "keep_matching": "להמשיך למאצ׳ים",
+        "view_full_plan": "לתוכנית המלאה",
+        "up_next": "הבא בתור",
+        "recently_liked": "לייקים אחרונים",
+        "good_morning": "בוקר טוב",
+        "good_afternoon": "צהריים טובים",
+        "good_evening": "ערב טוב",
+        "step_of": "שלב {step} מתוך {total}",
+        "wizard_basics_title": "ספרו לנו על היום הגדול",
+        "wizard_basics_sub": "כמה פרטים כדי ש-Vowly תתאים הכול בשבילכם. אפשר לשנות בכל רגע.",
+        "wizard_pick_title": "במה תרצו להתחיל?",
+        "wizard_pick_sub": "בחרו כמה ספקים להתמקד בהם. נבנה סביבם את תור המאצ׳ים שלכם.",
+        "next_step": "הבא",
+        "skip_for_now": "דלגו בינתיים",
+        "wedding_details": "פרטי החתונה",
+        "edit": "עריכה",
+        "guests": "אורחים",
+        "budget": "תקציב",
+        "account": "חשבון",
+        "more_tools": "כלים נוספים",
+        "not_set": "לא הוגדר",
+        "next_appointment": "הפגישה הבאה",
+        "auth_welcome": "להגיד כן לספקים הנכונים.",
+        "auth_welcome_sub": "Vowly עושה לכם מאצ׳ עם ספקי חתונה שתאהבו — מחליקים, שומרים, סוגרים.",
+        # ── Dashboard ──
+        "dash_overview": "החתונה שלכם במבט אחד",
+        "stat_completed": "משימות הושלמו",
+        "stat_in_progress": "בתהליך",
+        "stat_meetings": "פגישות",
+        "stat_favorites": "מועדפים",
+        "your_journey": "מסע התכנון שלכם",
+        "upcoming_tasks": "המשימות הקרובות שלך",
+        "all_tasks": "לכל המשימות",
+        "tasks_all_done": "הכול בשליטה — אין משימות פתוחות 🎉",
+        "recommended": "מומלץ עכשיו",
+        "vendor_categories": "גילוי ספקים",
+        "browse_all": "לכל הקטגוריות",
+        "next_step_label": "השלב הבא שלכם",
+        "next_step_book": "לבחור {name}",
+        "continue_planning": "המשיכו לתכנון",
+        "all_set": "סידרתם הכול",
+        "all_set_sub": "כל הספקים נסגרו — הגיע הזמן לחגוג!",
+        "stage_venue": "בחירת אולם",
+        "stage_vendors": "ספקים",
+        "stage_tasting": "טעימות",
+        "stage_invites": "הזמנות",
+        "stage_seating": "סידורי הושבה",
+        "stage_week": "שבוע החתונה",
+        # NBA
+        "nba_set_date": "הגדרת תאריך חתונה",
+        "nba_set_date_sub": "הלו״ז שלכם וכל תזכורות הספקים נבנים סביבו.",
+        "nba_set_guests": "הערכת מספר אורחים",
+        "nba_set_guests_sub": "זה משפיע על בחירת המקום והתקציב.",
+        "nba_set_budget": "הגדרת תקציב כולל",
+        "nba_set_budget_sub": "נעזור לכם לעקוב אחרי כל שקל.",
+        "nba_find_venue": "בחרו 3–5 אולמות לביקור",
+        "nba_find_venue_sub": "המקום קובע את התאריך, קיבולת האורחים, הקייטרינג וכל ספק אחר.",
+        "nba_core_vendor": "מצאו {name}",
+        "nba_core_vendor_sub": "{name} טובים נסגרים חודשים מראש — אל תחכו.",
+        "nba_ceremony_route": "בחרו את מסלול הטקס",
+        "nba_ceremony_route_sub": "Vowly תבנה עבורכם את רשימת המשימות הנכונה.",
+        "nba_rabbinate_docs": "פתחו תיק נישואין ברבנות",
+        "nba_rabbinate_docs_sub": "הגשת מסמכים לרבנות לוקחת זמן — כדאי להתחיל מוקדם.",
+        "nba_guest_list": "צרו רשימת אורחים",
+        "nba_guest_list_sub": "הוסיפו שמות, צדדים ופרטי קשר למעקב אישורי הגעה.",
+        "nba_rsvp_followup": "מעקב אחרי אורחים",
+        "nba_rsvp_followup_sub": "{count} אורחים עדיין לא ענו.",
+        "nba_wedding_month": "חודש החתונה — נשארו {days} ימים",
+        "nba_wedding_month_sub": "אשרו את כל הספקים, סיימו ההושבה ונקו יתרות תשלום.",
+        "nba_wedding_day": "היום החתונה שלכם!",
+        "nba_wedding_day_sub": "התמקדו בלו״ז, אנשי קשר של ספקים, ורשימת הבדיקה הסופית.",
+        # Guests
+        "guest_list": "רשימת אורחים",
+        "add_guest": "הוספת אורח",
+        "no_guests": "עדיין לא הוספתם אורחים.",
+        "guest_added": "האורח נוסף.",
+        "guest_deleted": "האורח הוסר.",
+        "guest_updated": "האורח עודכן.",
+        "rsvp_unknown": "לא ענה",
+        "rsvp_invited": "הוזמן",
+        "rsvp_coming": "מגיע",
+        "rsvp_not_coming": "לא מגיע",
+        "rsvp_maybe": "אולי",
+        "rsvp_needs_follow_up": "צריך מעקב",
+        "rsvp_status": "סטטוס הגעה",
+        "side_bride": "צד הכלה",
+        "side_groom": "צד החתן",
+        "side_shared": "משותף",
+        "side_family": "משפחה",
+        "side_work": "עבודה",
+        "side_friends": "חברים",
+        "total_guests": "סה״כ אורחים",
+        "confirmed_coming": "אישרו הגעה",
+        "not_answered": "לא ענו",
+        "invitation_sent_label": "הזמנה נשלחה",
+        "meal_notes": "הערות אוכל",
+        "table_number": "שולחן",
+        "guest_notes": "הערות",
+        "guest_side": "צד",
+        "guest_group": "קבוצה",
+        "guest_phone": "טלפון",
+        # Budget
+        "budget_title": "תקציב",
+        "budget_subtitle": "מעקב אחרי כל עלות — מהמשוער לתשלום סופי.",
+        "add_budget_item": "הוספת פריט",
+        "budget_category": "קטגוריה",
+        "estimated_amount": "משוער",
+        "actual_amount": "בפועל",
+        "paid_amount": "שולם",
+        "remaining": "נשאר",
+        "due_date": "תאריך תשלום",
+        "payment_status": "סטטוס תשלום",
+        "not_paid": "לא שולם",
+        "deposit_paid": "מקדמה שולמה",
+        "partially_paid": "שולם חלקית",
+        "paid_full": "שולם במלואו",
+        "budget_total_estimated": "סה״כ משוער",
+        "budget_total_actual": "סה״כ בפועל",
+        "budget_total_paid": "שולם עד כה",
+        "budget_over": "חורגים מהתקציב",
+        "budget_under": "מתחת לתקציב",
+        "budget_item_added": "פריט התקציב נוסף.",
+        "budget_item_updated": "פריט התקציב עודכן.",
+        "budget_item_deleted": "פריט התקציב הוסר.",
+        "price_per_guest": "מחיר משוער לאורח (₪)",
+        "next_payment_due": "התשלום הבא",
+        "no_budget_items": "עדיין אין פריטי תקציב.",
+        "budget_required_fields": "קטגוריה וסכום משוער הם שדות חובה.",
+        # Ceremony
+        "ceremony_route": "מסלול טקס",
+        "ceremony_route_label": "איך אתם מתחתנים?",
+        "route_rabbinate": "רבנות",
+        "route_private_rabbi": "רב פרטי",
+        "route_civil_abroad": "נישואים אזרחיים בחו״ל",
+        "route_utah_online": "יוטה / נישואים אזרחיים אונליין",
+        "route_symbolic": "טקס סמלי",
+        "route_other": "אחר",
+        "route_unknown": "עדיין לא החלטנו",
+        # Wedding month
+        "wedding_month_mode": "חודש החתונה",
+        "see_plan": "לתוכנית המלאה",
+        "see_guests": "לרשימת האורחים",
+        "see_budget": "לתקציב",
+        "confirm_suppliers": "אישור ספקים",
     },
+}
+
+
+DISPLAY_TRANSLATIONS = {
+    "en": {
+        "status": {
+            "Not started": "Not started",
+            "In progress": "In progress",
+            "Booked": "Booked",
+            "Not relevant": "Not relevant",
+            "Considering": "Considering",
+            "Contacted": "Contacted",
+            "Meeting Scheduled": "Meeting Scheduled",
+            "Rejected": "Rejected",
+            "Scheduled": "Scheduled",
+            "Completed": "Completed",
+            "Cancelled": "Cancelled",
+        },
+        "role": {"Bride": "Bride", "Groom": "Groom", "Other": "Other"},
+        "group": {
+            "Must-have suppliers": "Must-have suppliers",
+            "Important extras": "Important extras",
+            "Personal preparation": "Personal preparation",
+        },
+        "category": {
+            "Venue": "Venue", "Catering": "Catering", "Alcohol Bar": "Alcohol Bar",
+            "Photographer": "Photographer", "Videographer": "Videographer", "DJ": "DJ",
+            "Flowers": "Flowers", "Wedding Dress": "Wedding Dress", "Groom Suit": "Groom Suit",
+            "Hair Stylist": "Hair Stylist", "Makeup Artist": "Makeup Artist", "Rings": "Rings",
+            "Invitations": "Invitations", "Rabbi/Officiant": "Rabbi/Officiant",
+            "Transportation": "Transportation", "Wedding Planner": "Wedding Planner",
+            "Cake/Desserts": "Cake/Desserts",
+        },
+        "venue_type": {
+            "Garden": "Garden", "Hall": "Hall", "Beach": "Beach", "Loft": "Loft",
+            "Vineyard": "Vineyard", "Rooftop": "Rooftop",
+        },
+    },
+    "he": {
+        "status": {
+            "Not started": "עוד לא התחיל",
+            "In progress": "בתהליך",
+            "Booked": "נסגר",
+            "Not relevant": "לא רלוונטי",
+            "Considering": "בבדיקה",
+            "Contacted": "יצרנו קשר",
+            "Meeting Scheduled": "נקבעה פגישה",
+            "Rejected": "ירד מהפרק",
+            "Scheduled": "נקבעה",
+            "Completed": "הושלמה",
+            "Cancelled": "בוטלה",
+        },
+        "role": {"Bride": "כלה", "Groom": "חתן", "Other": "אחר"},
+        "group": {
+            "Must-have suppliers": "ספקי חובה",
+            "Important extras": "שדרוגים חשובים",
+            "Personal preparation": "הכנות אישיות",
+        },
+        "category": {
+            "Venue": "מקום לאירוע", "Catering": "קייטרינג", "Alcohol Bar": "בר אלכוהול",
+            "Photographer": "צילום סטילס", "Videographer": "צילום וידאו", "DJ": "די-ג׳יי",
+            "Flowers": "עיצוב ופרחים", "Wedding Dress": "שמלת כלה", "Groom Suit": "חליפת חתן",
+            "Hair Stylist": "עיצוב שיער", "Makeup Artist": "איפור", "Rings": "טבעות",
+            "Invitations": "הזמנות", "Rabbi/Officiant": "רב / עורך טקס",
+            "Transportation": "הסעות", "Wedding Planner": "מפיק / מנהל אירוע",
+            "Cake/Desserts": "עוגה וקינוחים",
+        },
+        "venue_type": {
+            "Garden": "גן אירועים", "Hall": "אולם", "Beach": "חוף", "Loft": "לופט",
+            "Vineyard": "יקב", "Rooftop": "גג",
+        },
+    },
+}
+
+
+SUPPLIER_DISPLAY = {
+    "en": {},
+    "he": {
+        "venue": ("אולם / גן אירועים", "המקום עצמו: זמינות תאריכים, קיבולת, חניה, נגישות ומה כלול."),
+        "catering": ("קייטרינג / אוכל", "תפריט, טעימות, מנות צמחוניות/טבעוניות, ילדים ונשנושים לשעות המאוחרות."),
+        "bar": ("בר / אלכוהול", "בר בסיסי או פרימיום, קוקטיילים, יין, בירה, שתייה קלה ועמדת קפה."),
+        "photographer": ("צלם סטילס", "צילום הזוג, המשפחה, הטקס, המסיבה וכל הפרטים הקטנים."),
+        "videographer": ("צלם וידאו", "סרט מלא, היילייטס, צילום טקס ורחפן אם רלוונטי."),
+        "dj": ("די-ג׳יי / מוזיקה", "מוזיקה לקבלת פנים, חופה ורחבה, מיקרופונים וגיבוי טכני."),
+        "florist": ("מעצב/ת אירוע ופרחים", "עיצוב חופה, מרכזי שולחן, כניסה, זר כלה וקישוטים משלימים."),
+        "bride_dress": ("שמלת כלה", "שמלה, נעליים, אקססוריז ולוק שני אם רוצים."),
+        "groom_suit": ("חליפת חתן", "חליפה, נעליים, עניבה או פפיון, חפתים ואקססוריז."),
+        "hair_stylist": ("עיצוב שיער", "בדרך כלל לכלה, ולעיתים גם למשפחה או מלוות."),
+        "makeup": ("מאפר/ת", "איפור כלה, ניסיון, ערכת טאצ׳-אפ ואיפור למשפחה אם צריך."),
+        "rings": ("טבעות נישואין", "טבעות, חריטה, התאמת מידה ולוח זמנים לקבלה."),
+        "invitations": ("הזמנות / הזמנות דיגיטליות", "Save the date, הזמנה רשמית, RSVP ואישורי הגעה."),
+        "officiant": ("רב / עורך טקס", "מסמכים, תיאום הטקס והובלת החופה או הטקס האישי."),
+        "transportation": ("הסעות", "רכב לזוג, שאטלים לאורחים, מוניות וסידורי חניה."),
+        "planner": ("מפיק/ת או מנהל/ת אירוע", "תיאום ספקים, לו״ז, תשלומים וטיפול בבעיות ביום האירוע."),
+        "seating_system": ("מערכת הושבה", "ניהול רשימת אורחים, שולחנות, RSVP ואישורי הגעה."),
+        "attractions": ("אטרקציות לאורחים", "מגנטים, תא צילום, צייר לייב, עשן, קונפטי וזוהרים."),
+        "lighting": ("תאורה וסאונד", "תאורת במה, רחבה, מסכים, מקרנים ואפקטים מיוחדים."),
+        "cake": ("עוגה / שולחן קינוחים", "עוגת חתונה, מתוקים מותאמים ונשנושים מאוחרים."),
+        "accommodation": ("לינה", "חדרים לזוג, משפחה או אורחים שמגיעים מרחוק."),
+        "guest_gifts": ("מתנות לאורחים", "מזכרות קטנות, פריטים ממותגים, נרות ומתנות אישיות."),
+        "kids_entertainment": ("הפעלות לילדים", "בייביסיטר, שולחן ילדים, משחקים ופינת פעילות."),
+        "security": ("אבטחה / עזרה ראשונה", "בהתאם לגודל המקום והדרישות."),
+        "cleaning": ("ניקיון / שירותים", "בדרך כלל דרך המקום, אבל חשוב לוודא מראש."),
+        "after_party": ("אפטר פארטי", "בר נפרד, מועדון, אוכל, הסעות והארכת מוזיקה."),
+        "nails": ("ציפורניים", "מניקור, פדיקור ובחירת צבע ניסיון."),
+        "spa": ("ספא / טיפוח עור", "טיפול פנים, שעווה, לייזר, שיזוף או עיסוי."),
+        "fitness": ("כושר / תזונה", "תוכנית הכנה אופציונלית לפני החתונה."),
+        "tailor": ("תופר/ת / תיקונים", "תיקוני שמלה וחליפה סמוך לתאריך."),
+        "jewelry": ("תכשיטים ואקססוריז", "עגילים, שרשרת, חפתים ואביזרי שיער."),
+        "grooming": ("טיפוח חתן / ספר", "תספורת, זקן, טיפוח עור ופגישת הכנה."),
+    },
+}
+
+
+CITY_DISPLAY_HE = {
+    "Acre": "עכו", "Akko": "עכו", "Afula": "עפולה", "Arad": "ערד", "Ariel": "אריאל",
+    "Ashdod": "אשדוד", "Ashkelon": "אשקלון", "Bat Yam": "בת ים", "Beer Sheva": "באר שבע",
+    "Beit Shean": "בית שאן", "Beit Shemesh": "בית שמש", "Bnei Brak": "בני ברק",
+    "Dimona": "דימונה", "Eilat": "אילת", "Gedera": "גדרה", "Givatayim": "גבעתיים",
+    "Hadera": "חדרה", "Haifa": "חיפה", "Herzliya": "הרצליה", "Hod HaSharon": "הוד השרון",
+    "Holon": "חולון", "Jerusalem": "ירושלים", "Kfar Saba": "כפר סבא", "Kiryat Ata": "קריית אתא",
+    "Kiryat Bialik": "קריית ביאליק", "Kiryat Gat": "קריית גת", "Kiryat Malachi": "קריית מלאכי",
+    "Kiryat Motzkin": "קריית מוצקין", "Kiryat Ono": "קריית אונו", "Kiryat Shmona": "קריית שמונה",
+    "Kiryat Yam": "קריית ים", "Lod": "לוד", "Ma'alot-Tarshiha": "מעלות תרשיחא",
+    "Mitzpe Ramon": "מצפה רמון", "Modi'in": "מודיעין", "Modiin": "מודיעין",
+    "Nahariya": "נהריה", "Nazareth": "נצרת", "Nes Ziona": "נס ציונה", "Nesher": "נשר",
+    "Netanya": "נתניה", "Netivot": "נתיבות", "Or Akiva": "אור עקיבא", "Or Yehuda": "אור יהודה",
+    "Petah Tikva": "פתח תקווה", "Ra'anana": "רעננה", "Ramat Gan": "רמת גן",
+    "Ramat HaSharon": "רמת השרון", "Ramla": "רמלה", "Rehovot": "רחובות",
+    "Rishon LeZion": "ראשון לציון", "Rosh HaAyin": "ראש העין", "Safed": "צפת",
+    "Sderot": "שדרות", "Tel Aviv": "תל אביב", "Tiberias": "טבריה", "Tirat Carmel": "טירת כרמל",
+    "Yavne": "יבנה", "Yehud": "יהוד", "Yokneam": "יקנעם",
 }
 
 
@@ -138,14 +954,61 @@ CITY_COORDS = {
     "Yehud": (32.0332, 34.8891), "Yokneam": (32.6599, 35.1107),
 }
 
+CITY_OPTIONS = [
+    "Acre", "Afula", "Arad", "Ariel", "Ashdod", "Ashkelon", "Bat Yam", "Beer Sheva",
+    "Beit Shean", "Beit Shemesh", "Bnei Brak", "Dimona", "Eilat", "Gedera", "Givatayim",
+    "Hadera", "Haifa", "Herzliya", "Hod HaSharon", "Holon", "Jerusalem", "Kfar Saba",
+    "Kiryat Ata", "Kiryat Bialik", "Kiryat Gat", "Kiryat Malachi", "Kiryat Motzkin",
+    "Kiryat Ono", "Kiryat Shmona", "Kiryat Yam", "Lod", "Ma'alot-Tarshiha",
+    "Mitzpe Ramon", "Modi'in", "Nahariya", "Nazareth", "Nes Ziona", "Nesher",
+    "Netanya", "Netivot", "Or Akiva", "Or Yehuda", "Petah Tikva", "Ra'anana",
+    "Ramat Gan", "Ramat HaSharon", "Ramla", "Rehovot", "Rishon LeZion", "Rosh HaAyin",
+    "Safed", "Sderot", "Tel Aviv", "Tiberias", "Tirat Carmel", "Yavne", "Yehud", "Yokneam",
+]
+
 
 def _language_for(user):
-    lang = (user["language"] if user and "language" in user.keys() else None) or session.get("language") or "en"
-    return lang if lang in TRANSLATIONS else "en"
+    lang = (user["language"] if user and "language" in user.keys() else None) or session.get("language") or DEFAULT_LANGUAGE
+    return lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE
 
 
 def _t(lang, key):
     return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, TRANSLATIONS["en"].get(key, key))
+
+
+def _display(lang, kind, value):
+    if value is None:
+        return ""
+    return DISPLAY_TRANSLATIONS.get(lang, {}).get(kind, {}).get(
+        value,
+        DISPLAY_TRANSLATIONS["en"].get(kind, {}).get(value, value),
+    )
+
+
+def _supplier_text(lang, supplier, field="name"):
+    if not supplier:
+        return ""
+    if lang == "he":
+        item = SUPPLIER_DISPLAY["he"].get(supplier.get("code"))
+        if item:
+            return item[0] if field == "name" else item[1]
+    return supplier.get(field, "")
+
+
+def _city_label(lang, city):
+    if not city:
+        return ""
+    return CITY_DISPLAY_HE.get(city, city) if lang == "he" else city
+
+
+def _date_label(lang, value):
+    if not value:
+        return ""
+    try:
+        dt = datetime.strptime(str(value)[:10], "%Y-%m-%d")
+        return dt.strftime("%d.%m.%Y") if lang == "he" else dt.strftime("%b %d, %Y")
+    except (ValueError, TypeError):
+        return value
 
 
 def _city_distance_km(a, b):
@@ -170,13 +1033,14 @@ def _city_distance_km(a, b):
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
+        lang = _language_for(current_user())
         if "user_id" not in session:
-            flash("Please log in to continue.", "error")
+            flash(_t(lang, "login_required"), "error")
             return redirect(url_for("index"))
         # Guard against stale sessions (e.g. after a DB re-seed)
         if not query("SELECT 1 FROM users WHERE user_id = ?", (session["user_id"],), one=True):
             session.clear()
-            flash("Session expired — please log in again.", "error")
+            flash(_t(lang, "session_expired"), "error")
             return redirect(url_for("index"))
         return view(*args, **kwargs)
     return wrapped
@@ -219,6 +1083,11 @@ def inject_globals():
         "lang": lang,
         "text_dir": "rtl" if lang == "he" else "ltr",
         "t": lambda key: _t(lang, key),
+        "td": lambda kind, value: _display(lang, kind, value),
+        "supplier_label": lambda supplier, field="name": _supplier_text(lang, supplier, field),
+        "city_label": lambda city: _city_label(lang, city),
+        "date_label": lambda value: _date_label(lang, value),
+        "city_options": CITY_OPTIONS,
     }
 
 
@@ -238,6 +1107,7 @@ def index():
         action = request.form.get("action", "login")
 
         if action == "register":
+            lang = _language_for(None)
             full_name = request.form.get("full_name", "").strip()
             email     = request.form.get("email", "").strip().lower()
             password  = request.form.get("password", "")
@@ -251,15 +1121,15 @@ def index():
             partner_phone = request.form.get("partner_phone", "").strip()
 
             if not (full_name and email and password):
-                flash("Name, email and password are required.", "error")
+                flash(_t(lang, "missing_register_fields"), "error")
                 return redirect(url_for("index", mode="register"))
 
             if role in ("Bride", "Groom") and not (partner_name and partner_email and partner_phone):
-                flash("Please fill in your partner's name, email and phone.", "error")
+                flash(_t(lang, "missing_partner_fields"), "error")
                 return redirect(url_for("index", mode="register"))
 
             if query("SELECT user_id FROM users WHERE email = ?", (email,), one=True):
-                flash("That email is already registered.", "error")
+                flash(_t(lang, "email_registered"), "error")
                 return redirect(url_for("index", mode="register"))
 
             uid = execute(
@@ -273,18 +1143,20 @@ def index():
                  partner_phone or None),
             )
             session["user_id"] = uid
-            flash("Welcome to Vowly! Let's set up your home dashboard.", "success")
+            session["language"] = DEFAULT_LANGUAGE
+            flash(_t(DEFAULT_LANGUAGE, "welcome_setup"), "success")
             return redirect(url_for("onboarding"))
 
         # login
+        lang = _language_for(None)
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         user = query("SELECT * FROM users WHERE email = ?", (email,), one=True)
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["user_id"]
-            flash(f"Welcome back, {user['full_name'].split()[0]}!", "success")
+            flash(_t(_language_for(user), "welcome_back_name").format(name=user["full_name"].split()[0]), "success")
             return redirect(url_for("home"))
-        flash("Invalid email or password.", "error")
+        flash(_t(lang, "invalid_login"), "error")
         return redirect(url_for("index", mode="login"))
 
     return render_template("index.html", mode=mode)
@@ -303,9 +1175,82 @@ def register():
 
 @app.route("/logout")
 def logout():
+    lang = _language_for(current_user())
     session.clear()
-    flash("You have been logged out.", "success")
+    flash(_t(lang, "logged_out"), "success")
     return redirect(url_for("index"))
+
+
+# ---------------------------------------------------------------------------
+# Social / OAuth sign-in
+# ---------------------------------------------------------------------------
+
+_OAUTH_PROVIDERS = {"google", "facebook"}
+
+
+@app.route("/auth/<provider>")
+def auth_provider(provider):
+    lang = _language_for(None)
+    if provider not in _OAUTH_PROVIDERS:
+        flash(_t(lang, "oauth_not_configured"), "error")
+        return redirect(url_for("index"))
+    try:
+        client = oauth.create_client(provider)
+    except Exception:
+        flash(_t(lang, "oauth_not_configured"), "error")
+        return redirect(url_for("index"))
+    redirect_uri = url_for("auth_callback", provider=provider, _external=True)
+    return client.authorize_redirect(redirect_uri)
+
+
+@app.route("/auth/<provider>/callback")
+def auth_callback(provider):
+    lang = _language_for(None)
+    if provider not in _OAUTH_PROVIDERS:
+        return redirect(url_for("index"))
+    try:
+        client = oauth.create_client(provider)
+        token  = client.authorize_access_token()
+    except Exception:
+        flash(_t(lang, "oauth_failed"), "error")
+        return redirect(url_for("index"))
+
+    if provider == "google":
+        info  = token.get("userinfo") or client.userinfo(token=token)
+        email = (info.get("email") or "").strip().lower()
+        name  = info.get("name") or email
+    else:  # facebook
+        resp  = client.get("me?fields=id,name,email", token=token)
+        data  = resp.json()
+        email = (data.get("email") or "").strip().lower()
+        name  = data.get("name") or email
+
+    if not email:
+        flash(_t(lang, "oauth_no_email"), "error")
+        return redirect(url_for("index"))
+
+    user = query("SELECT * FROM users WHERE email = ?", (email,), one=True)
+    if user:
+        session["user_id"] = user["user_id"]
+        flash(_t(_language_for(user), "welcome_back_name").format(
+            name=user["full_name"].split()[0]), "success")
+        return redirect(url_for("home"))
+
+    # New user — create account and go to onboarding
+    uid = execute(
+        "INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)",
+        (name, email, ""),
+    )
+    session["user_id"] = uid
+    session["language"] = DEFAULT_LANGUAGE
+    flash(_t(DEFAULT_LANGUAGE, "welcome_setup"), "success")
+    return redirect(url_for("onboarding"))
+
+
+@app.route("/profile")
+@login_required
+def profile():
+    return redirect(url_for("settings"))
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -314,9 +1259,9 @@ def settings():
     user = current_user()
     lang = _language_for(user)
     if request.method == "POST":
-        language = request.form.get("language", "en")
+        language = request.form.get("language", DEFAULT_LANGUAGE)
         if language not in TRANSLATIONS:
-            language = "en"
+            language = DEFAULT_LANGUAGE
         distance = request.form.get("distance_km", type=int) or 50
         distance = max(5, min(distance, 300))
         execute(
@@ -337,32 +1282,37 @@ def settings():
 @app.route("/wedding-profile", methods=["GET", "POST"])
 @login_required
 def wedding_profile():
+    lang = _language_for(current_user())
     w = current_wedding()
     if request.method == "POST":
-        partner   = request.form.get("partner_name", "").strip()
-        wdate     = request.form.get("wedding_date", "").strip() or None
-        guests    = request.form.get("estimated_guests", "").strip() or None
-        budget    = request.form.get("budget", "").strip() or None
-        city      = request.form.get("city", "").strip()
-        venue_pref= request.form.get("venue_type_preference", "").strip()
+        partner        = request.form.get("partner_name", "").strip()
+        wdate          = request.form.get("wedding_date", "").strip() or None
+        guests         = request.form.get("estimated_guests", "").strip() or None
+        budget         = request.form.get("budget", "").strip() or None
+        city           = request.form.get("city", "").strip()
+        venue_pref     = request.form.get("venue_type_preference", "").strip()
+        price_per_guest = request.form.get("price_per_guest", "").strip() or None
+        ceremony_route = request.form.get("ceremony_route", "").strip() or None
         if w:
             execute(
                 """UPDATE wedding_profiles
                    SET partner_name=?, wedding_date=?, estimated_guests=?, budget=?,
-                       city=?, venue_type_preference=?
+                       city=?, venue_type_preference=?, price_per_guest=?, ceremony_route=?
                    WHERE wedding_id=?""",
-                (partner, wdate, guests, budget, city, venue_pref, w["wedding_id"]),
+                (partner, wdate, guests, budget, city, venue_pref,
+                 price_per_guest, ceremony_route, w["wedding_id"]),
             )
-            flash("Wedding profile updated.", "success")
+            flash(_t(lang, "profile_updated"), "success")
         else:
             execute(
                 """INSERT INTO wedding_profiles
                    (user_id, partner_name, wedding_date, estimated_guests, budget,
-                    city, venue_type_preference)
-                   VALUES (?,?,?,?,?,?,?)""",
-                (session["user_id"], partner, wdate, guests, budget, city, venue_pref),
+                    city, venue_type_preference, price_per_guest, ceremony_route)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (session["user_id"], partner, wdate, guests, budget, city, venue_pref,
+                 price_per_guest, ceremony_route),
             )
-            flash("Wedding profile created. Welcome to Vowly!", "success")
+            flash(_t(lang, "profile_created"), "success")
         return redirect(url_for("home"))
     return render_template("wedding_profile.html", w=w)
 
@@ -428,6 +1378,24 @@ def onboarding():
 
     if request.method == "POST":
         w = _ensure_wedding()
+
+        # Step 1 — wedding basics (all optional; only overwrite what was given)
+        wdate  = request.form.get("wedding_date", "").strip() or None
+        city   = request.form.get("city", "").strip() or None
+        guests = request.form.get("estimated_guests", "").strip() or None
+        budget = request.form.get("budget", "").strip() or None
+        if wdate or city or guests or budget:
+            execute(
+                """UPDATE wedding_profiles
+                      SET wedding_date     = COALESCE(?, wedding_date),
+                          city             = COALESCE(?, city),
+                          estimated_guests = COALESCE(?, estimated_guests),
+                          budget           = COALESCE(?, budget)
+                    WHERE wedding_id = ?""",
+                (wdate, city, guests, budget, w["wedding_id"]),
+            )
+
+        # Step 2 — suppliers to start with
         picked = request.form.getlist("start_with")
         valid_codes = {s["code"] for s in suppliers}
         picked = [c for c in picked if c in valid_codes]
@@ -442,7 +1410,7 @@ def onboarding():
                 (w["wedding_id"], code),
             )
         if picked:
-            flash(f"Great \u2014 we marked {len(picked)} supplier(s) as in progress.", "success")
+            flash(_t(_language_for(user), "picked_suppliers").format(count=len(picked)), "success")
         return redirect(url_for("home"))
 
     grouped = group_by_category(suppliers)
@@ -452,22 +1420,20 @@ def onboarding():
         grouped_suppliers=grouped,
         state=state,
         role=role,
+        w=current_wedding(),
     )
 
 
-@app.route("/home")
-@login_required
-def home():
-    user = current_user()
+def _planning_context(user, w):
+    """Compute the supplier checklist + progress data shared by Home and Plan."""
     role = (user["role"] if user else None) or ""
-    w = _ensure_wedding()
 
     suppliers = visible_suppliers_for_role(role)
     state     = _supplier_state_map(w["wedding_id"])
     decorated = _decorate_suppliers(suppliers, state)
     grouped   = group_by_category(decorated)
 
-    # Map supplier code -> vendor_categories.category_id (for the swipe link)
+    # Map supplier code -> vendor_categories.category_id (for the Discover link)
     cat_rows = query("SELECT category_id, category_name FROM vendor_categories")
     name_to_id = {r["category_name"]: r["category_id"] for r in cat_rows}
     code_to_category_id = {
@@ -534,17 +1500,144 @@ def home():
         except (ValueError, TypeError):
             pass
 
-    # Top 3 "next up" suggestions: not started, ordered by group importance
+    # Top "next up" suggestions: not started, ordered by group importance
     group_weight = {g: i for i, g in enumerate(GROUPS)}
     next_up = sorted(
         [s for s in decorated if s["status"] == "Not started"],
         key=lambda s: (group_weight.get(s["category"], 99), s["name"]),
-    )[:3]
+    )[:4]
 
     partner_name = (w["partner_name"] if w and "partner_name" in w.keys() else None) \
                    or (user["partner_name"] if user else None)
 
-    # Liked vendors strip — most recently liked, up to 20
+    return {
+        "grouped": grouped,
+        "category_progress": category_progress,
+        "overall": overall,
+        "role": role,
+        "code_to_category_id": code_to_category_id,
+        "days_until_wedding": days_until_wedding,
+        "wedding_date_display": wedding_date_display,
+        "next_up": next_up,
+        "partner_name": partner_name,
+    }
+
+
+def _next_best_action(user, w, decorated, days_until_wedding):
+    """Return the single highest-priority next action dict, or None if all done."""
+    lang = _language_for(user)
+    wedding_id = w["wedding_id"] if w else None
+
+    # 1. No wedding date
+    if days_until_wedding is None:
+        return {"title": _t(lang, "nba_set_date"), "subtitle": _t(lang, "nba_set_date_sub"),
+                "cta_label": _t(lang, "add_wedding_date"), "route": url_for("wedding_profile"),
+                "phase": "basics", "level": 1}
+
+    # 11. Wedding day
+    if days_until_wedding == 0:
+        return {"title": _t(lang, "nba_wedding_day"), "subtitle": _t(lang, "nba_wedding_day_sub"),
+                "cta_label": _t(lang, "see_plan"), "route": url_for("plan"),
+                "phase": "wedding_day", "level": 11}
+
+    # 2. No guest count
+    if not (w and w["estimated_guests"]):
+        return {"title": _t(lang, "nba_set_guests"), "subtitle": _t(lang, "nba_set_guests_sub"),
+                "cta_label": _t(lang, "edit"), "route": url_for("wedding_profile"),
+                "phase": "basics", "level": 2}
+
+    # 3. No budget
+    if not (w and w["budget"]):
+        return {"title": _t(lang, "nba_set_budget"), "subtitle": _t(lang, "nba_set_budget_sub"),
+                "cta_label": _t(lang, "edit"), "route": url_for("wedding_profile"),
+                "phase": "basics", "level": 3}
+
+    # Venue status
+    venue_sup = next((s for s in decorated if s["code"] == "venue"), None)
+    venue_booked = venue_sup and venue_sup["status"] == "Booked"
+    venue_started = venue_sup and venue_sup["status"] in ("In progress", "Booked")
+
+    # 4. No venue started
+    if not venue_started:
+        venue_cat = query("SELECT category_id FROM vendor_categories WHERE category_name='Venue'", one=True)
+        route = url_for("discover", category_id=venue_cat["category_id"]) if venue_cat else url_for("discover")
+        return {"title": _t(lang, "nba_find_venue"), "subtitle": _t(lang, "nba_find_venue_sub"),
+                "cta_label": _t(lang, "start_swiping"), "route": route,
+                "phase": "venue", "level": 4}
+
+    # 5. Venue booked, find highest-priority missing core vendor
+    if venue_booked:
+        core_priority = ["photographer", "videographer", "dj", "makeup", "hair_stylist",
+                         "bride_dress", "groom_suit", "florist"]
+        for code in core_priority:
+            sup = next((s for s in decorated if s["code"] == code), None)
+            if sup and sup["status"] == "Not started":
+                cat_name = SUPPLIER_TO_VENDOR_CATEGORY.get(code)
+                cat_row = query("SELECT category_id FROM vendor_categories WHERE category_name=?",
+                                (cat_name,), one=True) if cat_name else None
+                route = url_for("discover", category_id=cat_row["category_id"]) if cat_row else url_for("discover")
+                sup_label = _supplier_text(lang, sup, "name")
+                return {"title": _t(lang, "nba_core_vendor").format(name=sup_label),
+                        "subtitle": _t(lang, "nba_core_vendor_sub").format(name=sup_label),
+                        "cta_label": _t(lang, "start_swiping"), "route": route,
+                        "phase": "core_vendors", "level": 5}
+
+    # 6. Ceremony route unknown
+    ceremony_route = w["ceremony_route"] if w and "ceremony_route" in w.keys() else None
+    if not ceremony_route:
+        return {"title": _t(lang, "nba_ceremony_route"), "subtitle": _t(lang, "nba_ceremony_route_sub"),
+                "cta_label": _t(lang, "edit"), "route": url_for("wedding_profile"),
+                "phase": "ceremony", "level": 6}
+
+    # 7. Rabbinate and no legal tasks started
+    if ceremony_route == "rabbinate":
+        rabbinate_items = query(
+            "SELECT COUNT(*) AS c FROM checklist_items WHERE wedding_id=?", (wedding_id,), one=True
+        )
+        if not rabbinate_items or rabbinate_items["c"] == 0:
+            return {"title": _t(lang, "nba_rabbinate_docs"), "subtitle": _t(lang, "nba_rabbinate_docs_sub"),
+                    "cta_label": _t(lang, "plan"), "route": url_for("plan"),
+                    "phase": "ceremony", "level": 7}
+
+    # 8. Guest list empty
+    guest_count_row = query("SELECT COUNT(*) AS c FROM guests WHERE wedding_id=?", (wedding_id,), one=True)
+    guest_count = guest_count_row["c"] if guest_count_row else 0
+    if guest_count == 0:
+        return {"title": _t(lang, "nba_guest_list"), "subtitle": _t(lang, "nba_guest_list_sub"),
+                "cta_label": _t(lang, "add_guest"), "route": url_for("guests"),
+                "phase": "guests", "level": 8}
+
+    # 9. RSVP follow-up (if within 90 days and many unanswered)
+    if days_until_wedding <= 90:
+        unanswered = query(
+            "SELECT COUNT(*) AS c FROM guests WHERE wedding_id=? AND rsvp_status IN ('unknown','invited','needs_follow_up')",
+            (wedding_id,), one=True
+        )
+        unanswered_count = unanswered["c"] if unanswered else 0
+        if unanswered_count > 5:
+            return {"title": _t(lang, "nba_rsvp_followup"),
+                    "subtitle": _t(lang, "nba_rsvp_followup_sub").format(count=unanswered_count),
+                    "cta_label": _t(lang, "see_guests"), "route": url_for("guests"),
+                    "phase": "guests", "level": 9}
+
+    # 10. Wedding month (≤ 30 days)
+    if days_until_wedding <= 30:
+        return {"title": _t(lang, "nba_wedding_month").format(days=days_until_wedding),
+                "subtitle": _t(lang, "nba_wedding_month_sub"),
+                "cta_label": _t(lang, "see_plan"), "route": url_for("plan"),
+                "phase": "wedding_month", "level": 10}
+
+    return None
+
+
+@app.route("/home")
+@login_required
+def home():
+    """Dashboard: countdown, progress, next actions, recent likes."""
+    user = current_user()
+    w = _ensure_wedding()
+    ctx = _planning_context(user, w)
+
     liked_vendors = query(
         """SELECT v.vendor_id, v.business_name, v.city, v.rating_average,
                   vc.category_name,
@@ -555,31 +1648,279 @@ def home():
              JOIN vendor_categories vc ON vc.category_id = v.category_id
             WHERE fv.wedding_id = ?
             ORDER BY fv.added_at DESC
-            LIMIT 20""",
+            LIMIT 12""",
         (w["wedding_id"],),
     )
+    next_appointment = query(
+        """SELECT a.*, v.business_name FROM appointments a
+           JOIN vendors v ON v.vendor_id = a.vendor_id
+          WHERE a.wedding_id = ? AND a.status = 'Scheduled'
+            AND date(a.appointment_date) >= date('now')
+          ORDER BY a.appointment_date LIMIT 1""",
+        (w["wedding_id"],), one=True,
+    )
+    appt_row = query(
+        """SELECT COUNT(*) AS c FROM appointments
+            WHERE wedding_id = ? AND status = 'Scheduled'
+              AND date(appointment_date) >= date('now')""",
+        (w["wedding_id"],), one=True,
+    )
+    appt_count = appt_row["c"] if appt_row else 0
+
+    # Flatten the decorated checklist once so the dashboard can look suppliers
+    # up by code (timeline, vendor tiles) and surface the most actionable ones.
+    flat = [s for items in ctx["grouped"].values() for s in items]
+    sup_by_code = {s["code"]: s for s in flat}
+    status_rank = {"In progress": 0, "Not started": 1}
+    upcoming_tasks = sorted(
+        [s for s in flat if s["status"] in status_rank],
+        key=lambda s: (status_rank[s["status"]], s["name"]),
+    )[:5]
+
+    # Guest stats
+    guest_stats = query(
+        """SELECT COUNT(*) AS total,
+                  SUM(CASE WHEN rsvp_status='coming' THEN 1 ELSE 0 END) AS coming,
+                  SUM(CASE WHEN rsvp_status IN ('unknown','invited','needs_follow_up') THEN 1 ELSE 0 END) AS unanswered
+             FROM guests WHERE wedding_id=?""",
+        (w["wedding_id"],), one=True
+    )
+
+    # Budget stats
+    budget_stats = query(
+        """SELECT SUM(estimated_amount) AS estimated,
+                  SUM(actual_amount) AS actual,
+                  SUM(paid_amount) AS paid
+             FROM wedding_budget WHERE wedding_id=?""",
+        (w["wedding_id"],), one=True
+    )
+
+    # Wedding month mode
+    wedding_month_mode = ctx["days_until_wedding"] is not None and ctx["days_until_wedding"] <= 30
+
+    # NBA
+    nba = _next_best_action(user, w, flat, ctx["days_until_wedding"])
 
     return render_template(
-        "checklist.html",
-        grouped=grouped,
-        category_progress=category_progress,
-        overall=overall,
-        statuses=STATUSES,
-        groups=GROUPS,
-        role=role,
-        code_to_category_id=code_to_category_id,
-        days_until_wedding=days_until_wedding,
-        wedding_date_display=wedding_date_display,
-        next_up=next_up,
-        partner_name=partner_name,
+        "home.html",
         liked_vendors=liked_vendors,
+        next_appointment=next_appointment,
+        appt_count=appt_count,
+        sup_by_code=sup_by_code,
+        upcoming_tasks=upcoming_tasks,
+        guest_stats=guest_stats,
+        budget_stats=budget_stats,
+        wedding_month_mode=wedding_month_mode,
+        nba=nba,
+        **ctx,
     )
+
+
+@app.route("/plan")
+@login_required
+def plan():
+    """Full supplier checklist, grouped and filterable."""
+    user = current_user()
+    w = _ensure_wedding()
+    ctx = _planning_context(user, w)
+    return render_template("plan.html", statuses=STATUSES, groups=GROUPS, **ctx)
+
+
+# ---------------------------------------------------------------------------
+# Guests
+# ---------------------------------------------------------------------------
+
+@app.route("/guests", methods=["GET", "POST"])
+@login_required
+def guests():
+    lang = _language_for(current_user())
+    w = _ensure_wedding()
+    if request.method == "POST":
+        full_name  = request.form.get("full_name", "").strip()
+        phone      = request.form.get("phone", "").strip()
+        side       = request.form.get("side", "").strip()
+        group_name = request.form.get("group_name", "").strip()
+        rsvp       = request.form.get("rsvp_status", "unknown")
+        meal_notes = request.form.get("meal_notes", "").strip()
+        table_num  = request.form.get("table_number", "").strip()
+        notes      = request.form.get("notes", "").strip()
+        if not full_name:
+            flash(_t(lang, "missing_register_fields"), "error")
+            return redirect(url_for("guests"))
+        execute(
+            """INSERT INTO guests (wedding_id, full_name, phone, side, group_name,
+               rsvp_status, meal_notes, table_number, notes)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (w["wedding_id"], full_name, phone or None, side or None, group_name or None,
+             rsvp, meal_notes or None, table_num or None, notes or None),
+        )
+        flash(_t(lang, "guest_added"), "success")
+        return redirect(url_for("guests"))
+    rows = query(
+        "SELECT * FROM guests WHERE wedding_id=? ORDER BY side, full_name",
+        (w["wedding_id"],),
+    )
+    stats = query(
+        """SELECT COUNT(*) AS total,
+                  SUM(CASE WHEN rsvp_status='coming' THEN 1 ELSE 0 END) AS coming,
+                  SUM(CASE WHEN rsvp_status='not_coming' THEN 1 ELSE 0 END) AS not_coming,
+                  SUM(CASE WHEN rsvp_status IN ('unknown','invited','needs_follow_up') THEN 1 ELSE 0 END) AS unanswered
+             FROM guests WHERE wedding_id=?""",
+        (w["wedding_id"],), one=True
+    )
+    return render_template("guests.html", rows=rows, stats=stats)
+
+
+@app.route("/guests/<int:gid>/update", methods=["POST"])
+@login_required
+def guests_update(gid):
+    lang = _language_for(current_user())
+    w = current_wedding()
+    rsvp = request.form.get("rsvp_status", "unknown")
+    table_num = request.form.get("table_number", "").strip() or None
+    meal_notes = request.form.get("meal_notes", "").strip() or None
+    invitation_sent = 1 if request.form.get("invitation_sent") else 0
+    execute(
+        "UPDATE guests SET rsvp_status=?, table_number=?, meal_notes=?, invitation_sent=? WHERE guest_id=? AND wedding_id=?",
+        (rsvp, table_num, meal_notes, invitation_sent, gid, w["wedding_id"] if w else 0),
+    )
+    flash(_t(lang, "guest_updated"), "success")
+    return redirect(url_for("guests"))
+
+
+@app.route("/guests/<int:gid>/delete", methods=["POST"])
+@login_required
+def guests_delete(gid):
+    lang = _language_for(current_user())
+    w = current_wedding()
+    execute("DELETE FROM guests WHERE guest_id=? AND wedding_id=?",
+            (gid, w["wedding_id"] if w else 0))
+    flash(_t(lang, "guest_deleted"), "success")
+    return redirect(url_for("guests"))
+
+
+# ---------------------------------------------------------------------------
+# Budget
+# ---------------------------------------------------------------------------
+
+BUDGET_CATEGORIES = [
+    "Venue / food", "DJ", "Photography", "Dress", "Suit", "Makeup and hair",
+    "Rings", "Rabbi / ceremony", "Design / flowers", "Invitations",
+    "Alcohol upgrades", "Extras / surprises", "Honeymoon", "Emergency buffer",
+]
+
+BUDGET_CATEGORIES_HE = [
+    "אולם / אוכל", "די-ג׳יי", "צילום", "שמלה", "חליפה", "איפור ושיער",
+    "טבעות", "רב / טקס", "עיצוב ופרחים", "הזמנות",
+    "שדרוגי אלכוהול", "אקסטרות / הפתעות", "ירח דבש", "חיץ חירום",
+]
+
+
+@app.route("/budget", methods=["GET", "POST"])
+@login_required
+def budget():
+    user = current_user()
+    lang = _language_for(user)
+    w = _ensure_wedding()
+    if request.method == "POST":
+        action = request.form.get("action", "add")
+        if action == "update_price_per_guest":
+            ppg = request.form.get("price_per_guest", "").strip()
+            try:
+                ppg_val = float(ppg) if ppg else None
+            except ValueError:
+                ppg_val = None
+            execute("UPDATE wedding_profiles SET price_per_guest=? WHERE wedding_id=?",
+                    (ppg_val, w["wedding_id"]))
+            flash(_t(lang, "settings_saved"), "success")
+            return redirect(url_for("budget"))
+        # add budget item
+        cat_label = request.form.get("category_label", "").strip()
+        est = request.form.get("estimated_amount", "").strip()
+        actual = request.form.get("actual_amount", "").strip()
+        paid = request.form.get("paid_amount", "").strip()
+        due = request.form.get("due_date", "").strip() or None
+        pstatus = request.form.get("payment_status", "Not paid")
+        notes = request.form.get("notes", "").strip() or None
+        if not (cat_label and est):
+            flash(_t(lang, "budget_required_fields"), "error")
+            return redirect(url_for("budget"))
+        try:
+            est_val = float(est)
+            actual_val = float(actual) if actual else 0
+            paid_val = float(paid) if paid else 0
+        except ValueError:
+            flash(_t(lang, "budget_required_fields"), "error")
+            return redirect(url_for("budget"))
+        execute(
+            """INSERT INTO wedding_budget (wedding_id, category_label, estimated_amount,
+               actual_amount, paid_amount, due_date, payment_status, notes)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (w["wedding_id"], cat_label, est_val, actual_val, paid_val, due, pstatus, notes),
+        )
+        flash(_t(lang, "budget_item_added"), "success")
+        return redirect(url_for("budget"))
+
+    rows = query(
+        "SELECT * FROM wedding_budget WHERE wedding_id=? ORDER BY created_at",
+        (w["wedding_id"],)
+    )
+    totals = query(
+        """SELECT SUM(estimated_amount) AS estimated,
+                  SUM(actual_amount) AS actual,
+                  SUM(paid_amount) AS paid
+             FROM wedding_budget WHERE wedding_id=?""",
+        (w["wedding_id"],), one=True
+    )
+    next_due = query(
+        """SELECT * FROM wedding_budget WHERE wedding_id=? AND due_date IS NOT NULL
+           AND payment_status != 'Paid in full'
+           ORDER BY due_date LIMIT 1""",
+        (w["wedding_id"],), one=True
+    )
+    cats = BUDGET_CATEGORIES_HE if lang == "he" else BUDGET_CATEGORIES
+    return render_template("budget.html", rows=rows, totals=totals, next_due=next_due,
+                           budget_categories=cats, w=w)
+
+
+@app.route("/budget/<int:bid>/update", methods=["POST"])
+@login_required
+def budget_update(bid):
+    lang = _language_for(current_user())
+    w = current_wedding()
+    actual = request.form.get("actual_amount", "0")
+    paid = request.form.get("paid_amount", "0")
+    pstatus = request.form.get("payment_status", "Not paid")
+    due = request.form.get("due_date", "").strip() or None
+    notes = request.form.get("notes", "").strip() or None
+    try:
+        actual_val = float(actual)
+        paid_val = float(paid)
+    except ValueError:
+        actual_val = paid_val = 0
+    execute(
+        "UPDATE wedding_budget SET actual_amount=?, paid_amount=?, payment_status=?, due_date=?, notes=? WHERE budget_id=? AND wedding_id=?",
+        (actual_val, paid_val, pstatus, due, notes, bid, w["wedding_id"] if w else 0),
+    )
+    flash(_t(lang, "budget_item_updated"), "success")
+    return redirect(url_for("budget"))
+
+
+@app.route("/budget/<int:bid>/delete", methods=["POST"])
+@login_required
+def budget_delete(bid):
+    lang = _language_for(current_user())
+    w = current_wedding()
+    execute("DELETE FROM wedding_budget WHERE budget_id=? AND wedding_id=?",
+            (bid, w["wedding_id"] if w else 0))
+    flash(_t(lang, "budget_item_deleted"), "success")
+    return redirect(url_for("budget"))
 
 
 @app.route("/checklist")
 @login_required
 def checklist():
-    return redirect(url_for("home"))
+    return redirect(url_for("plan"))
 
 
 @app.route("/checklist/<code>/update", methods=["POST"])
@@ -641,7 +1982,7 @@ def vendors():
     if search:
         sql += " AND (v.business_name LIKE ? OR v.description LIKE ?)"
         params.extend([f"%{search}%", f"%{search}%"])
-    sql += " ORDER BY v.rating_average DESC, v.business_name"
+    sql += " ORDER BY v.rating_average DESC, v.business_name LIMIT 120"
 
     vendor_rows = query(sql, tuple(params))
     categories  = query("SELECT * FROM vendor_categories ORDER BY category_name")
@@ -681,34 +2022,243 @@ def vendor_detail(vendor_id):
 
 
 # ---------------------------------------------------------------------------
-# Swipe
+# Discover (swipe hub)
 # ---------------------------------------------------------------------------
 
-@app.route("/swipe")
+GOOGLE_PLACES_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+GOOGLE_PLACES_PHOTO_URL = "https://places.googleapis.com/v1/{photo_name}/media"
+GOOGLE_PLACES_FIELD_MASK = ",".join([
+    "places.id",
+    "places.displayName",
+    "places.formattedAddress",
+    "places.internationalPhoneNumber",
+    "places.websiteUri",
+    "places.rating",
+    "places.priceLevel",
+    "places.photos",
+])
+GOOGLE_PRICE_MAP = {
+    "PRICE_LEVEL_INEXPENSIVE": (3_000, 8_000),
+    "PRICE_LEVEL_MODERATE": (8_000, 20_000),
+    "PRICE_LEVEL_EXPENSIVE": (20_000, 50_000),
+    "PRICE_LEVEL_VERY_EXPENSIVE": (50_000, 120_000),
+}
+
+
+def _slug_for_contact(value):
+    return re.sub(r"[^a-z0-9]+", "", (value or "").lower().replace("&", "and"))
+
+
+def _google_place_name(place):
+    display = place.get("displayName") or {}
+    return (display.get("text") or "").strip()
+
+
+def _google_city_from_address(address):
+    for part in reversed([p.strip() for p in (address or "").split(",")]):
+        if part and not part.lower().startswith("israel") and not part.startswith("ישראל"):
+            return part
+    return ""
+
+
+def _google_place_photo_url(place):
+    photos = place.get("photos") or []
+    if not photos:
+        return ""
+    photo_name = photos[0].get("name", "")
+    if not photo_name:
+        return ""
+    return (
+        GOOGLE_PLACES_PHOTO_URL.format(photo_name=quote(photo_name, safe="/"))
+        + f"?maxWidthPx=800&key={GOOGLE_PLACES_API_KEY}"
+    )
+
+
+def _google_price_range(place):
+    return GOOGLE_PRICE_MAP.get(place.get("priceLevel"), (5_000, 15_000))
+
+
+def _normalize_google_vendor(place, category_name, city_hint=""):
+    name = _google_place_name(place)
+    address = place.get("formattedAddress") or city_hint
+    city = _google_city_from_address(address) or city_hint or "Israel"
+    price_min, price_max = _google_price_range(place)
+    slug = _slug_for_contact(name)
+    return {
+        "google_place_id": place.get("id", ""),
+        "business_name": name,
+        "category_name": category_name,
+        "city": city,
+        "address": address,
+        "phone": place.get("internationalPhoneNumber") or "",
+        "email": f"hello@{slug}.co.il" if slug else "",
+        "website": place.get("websiteUri") or "",
+        "instagram_url": f"https://instagram.com/{slug}" if slug else "",
+        "description": (
+            f"{name} is a real {category_name.lower()} provider listed on "
+            f"Google Places in {city}."
+        ),
+        "price_min": price_min,
+        "price_max": price_max,
+        "rating_average": float(place.get("rating") or 0.0),
+        "photo_url": _google_place_photo_url(place),
+    }
+
+
+def _vendor_payload(vendor, category_name, photo_url="", review_count=0):
+    photo = photo_url or f"https://picsum.photos/seed/{vendor['vendor_id']}/800/600"
+    return {
+        "vendorId": vendor["vendor_id"],
+        "categoryId": vendor["category_id"],
+        "categoryName": _display(_language_for(current_user()), "category", category_name),
+        "name": vendor["business_name"],
+        "city": _city_label(_language_for(current_user()), vendor["city"]),
+        "rating": f"{vendor['rating_average']:.1f}" if vendor["rating_average"] else "",
+        "photo": photo,
+        "url": url_for("vendor_detail", vendor_id=vendor["vendor_id"]),
+        "desc": vendor["description"] or "",
+        "price": (
+            f"₪{vendor['price_min']:.0f} - ₪{vendor['price_max']:.0f}"
+            if vendor["price_min"] and vendor["price_max"] else ""
+        ),
+        "address": vendor["address"] or "",
+        "phone": vendor["phone"] or "",
+        "email": vendor["email"] or "",
+        "website": vendor["website"] or "",
+        "instagram": vendor["instagram_url"] or "",
+        "reviewCount": int(review_count or 0),
+    }
+
+
+@app.route("/api/google-vendors/search")
 @login_required
-def swipe_pick_category():
-    # Legacy entry point: send users to Home where each supplier card
-    # opens its own swipe queue.
-    return redirect(url_for("home"))
+def google_vendor_search():
+    if not GOOGLE_PLACES_API_KEY:
+        return jsonify({"results": [], "error": "missing_google_places_key"}), 503
 
+    term = request.args.get("q", "").strip()
+    category_id = request.args.get("category_id", type=int)
+    if len(term) < 2 or not category_id:
+        return jsonify({"results": []})
 
-@app.route("/swipe/<int:category_id>")
-@login_required
-def swipe(category_id):
-    w = _ensure_wedding()
-    category = query("SELECT * FROM vendor_categories WHERE category_id=?", (category_id,), one=True)
-    if not category: abort(404)
-
-    sort = request.args.get("sort", "recommended")
-    if sort not in ("recommended", "near"):
-        sort = "recommended"
-    search = request.args.get("q", "").strip()
-
-    # Optional ?supplier=<code> keeps the user in the supplier-specific queue.
-    supplier_code = (request.args.get("supplier") or "").strip()
-    supplier = SUPPLIERS_BY_CODE.get(supplier_code) if supplier_code else None
+    cat = query("SELECT category_name FROM vendor_categories WHERE category_id=?", (category_id,), one=True)
+    if not cat:
+        abort(404)
 
     user = current_user()
+    city_hint = (user["city"] if user and "city" in user.keys() else "") or "Israel"
+    text_query = f"{term} {cat['category_name']} wedding supplier in {city_hint}, Israel"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": GOOGLE_PLACES_FIELD_MASK,
+    }
+    body = {
+        "textQuery": text_query,
+        "languageCode": _language_for(user),
+        "regionCode": "IL",
+        "pageSize": 6,
+    }
+
+    try:
+        response = requests.post(GOOGLE_PLACES_SEARCH_URL, headers=headers, json=body, timeout=8)
+        response.raise_for_status()
+    except requests.RequestException:
+        return jsonify({"results": [], "error": "google_search_failed"}), 502
+
+    normalized = []
+    for place in response.json().get("places") or []:
+        item = _normalize_google_vendor(place, cat["category_name"], city_hint)
+        if item["google_place_id"] and item["business_name"]:
+            normalized.append(item)
+
+    session["google_vendor_search"] = {
+        item["google_place_id"]: item for item in normalized
+    }
+    session.modified = True
+
+    return jsonify({
+        "results": [
+            {
+                "placeId": item["google_place_id"],
+                "name": item["business_name"],
+                "category": _display(_language_for(user), "category", cat["category_name"]),
+                "city": _city_label(_language_for(user), item["city"]),
+                "address": item["address"],
+                "rating": f"{item['rating_average']:.1f}" if item["rating_average"] else "",
+                "photo": item["photo_url"],
+            }
+            for item in normalized
+        ]
+    })
+
+
+@app.route("/api/google-vendors/select", methods=["POST"])
+@login_required
+def google_vendor_select():
+    payload = request.get_json(silent=True) or {}
+    place_id = (payload.get("place_id") or "").strip()
+    category_id = int(payload.get("category_id") or 0)
+    cached = (session.get("google_vendor_search") or {}).get(place_id)
+    if not cached or not category_id:
+        abort(400)
+
+    cat = query("SELECT category_name FROM vendor_categories WHERE category_id=?", (category_id,), one=True)
+    if not cat:
+        abort(404)
+
+    existing = query(
+        """SELECT v.*, COALESCE(COUNT(vr.review_id), 0) AS review_count
+             FROM vendors v
+             LEFT JOIN vendor_reviews vr ON vr.vendor_id = v.vendor_id
+            WHERE v.category_id = ? AND v.business_name = ? AND COALESCE(v.address, '') = ?
+            GROUP BY v.vendor_id""",
+        (category_id, cached["business_name"], cached["address"] or ""),
+        one=True,
+    )
+
+    if existing:
+        vendor = existing
+    else:
+        vendor_id = execute(
+            """INSERT INTO vendors
+               (business_name, category_id, city, address, phone, email, website,
+                instagram_url, description, price_min, price_max, rating_average, is_active)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)""",
+            (
+                cached["business_name"], category_id, cached["city"], cached["address"],
+                cached["phone"], cached["email"], cached["website"], cached["instagram_url"],
+                cached["description"], cached["price_min"], cached["price_max"],
+                cached["rating_average"],
+            ),
+        )
+        if cached.get("photo_url"):
+            execute(
+                "INSERT INTO vendor_photos (vendor_id, photo_url, caption) VALUES (?,?,?)",
+                (vendor_id, cached["photo_url"], cached["business_name"]),
+            )
+        vendor = query(
+            "SELECT v.*, 0 AS review_count FROM vendors v WHERE v.vendor_id=?",
+            (vendor_id,), one=True,
+        )
+
+    photo = query(
+        "SELECT photo_url FROM vendor_photos WHERE vendor_id=? ORDER BY uploaded_at LIMIT 1",
+        (vendor["vendor_id"],), one=True,
+    )
+    return jsonify({
+        "vendor": _vendor_payload(
+            vendor,
+            cat["category_name"],
+            photo["photo_url"] if photo else cached.get("photo_url", ""),
+            vendor["review_count"] if "review_count" in vendor.keys() else 0,
+        )
+    })
+
+
+def _build_deck(w, user, category_id, search=""):
+    """Return (vendors, photo_map) for the swipe deck of one category:
+    unswiped, active vendors, nearest-first within the user's distance."""
     user_city = ((user["city"] if user else "") or "").strip()
     max_distance = user["distance_km"] if user and "distance_km" in user.keys() and user["distance_km"] else 50
 
@@ -718,29 +2268,19 @@ def swipe(category_id):
         search_clause = " AND (v.business_name LIKE ? OR v.description LIKE ?)"
         search_params = (f"%{search}%", f"%{search}%")
 
-    if sort == "near" and user_city:
-        sql = """SELECT v.*,
-                        CASE WHEN LOWER(v.city) = LOWER(?) THEN 0 ELSE 1 END AS distance_rank
-                 FROM vendors v
-                 WHERE v.category_id = ? AND v.is_active = 1
-                   AND v.vendor_id NOT IN (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
-                   {search_clause}
-                 ORDER BY distance_rank ASC, v.rating_average DESC
-                 LIMIT 80""".format(search_clause=search_clause)
-        params = (user_city, category_id, w["wedding_id"], *search_params)
-    else:
-        sql = """SELECT v.* FROM vendors v
-                 WHERE v.category_id = ? AND v.is_active = 1
-                   AND v.vendor_id NOT IN (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
-                   {search_clause}
-                 ORDER BY v.rating_average DESC
-                 LIMIT 80""".format(search_clause=search_clause)
-        params = (category_id, w["wedding_id"], *search_params)
+    sql = """SELECT v.*, COALESCE(COUNT(vr.review_id), 0) AS review_count
+             FROM vendors v
+             LEFT JOIN vendor_reviews vr ON vr.vendor_id = v.vendor_id
+             WHERE v.category_id = ? AND v.is_active = 1
+               AND v.vendor_id NOT IN (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
+               {search_clause}
+             GROUP BY v.vendor_id
+             ORDER BY v.rating_average DESC
+             LIMIT 80""".format(search_clause=search_clause)
+    vendors = query(sql, (category_id, w["wedding_id"], *search_params))
 
-    vendors = query(sql, params)
     if user_city:
-        nearby = []
-        unknown = []
+        nearby, unknown = [], []
         for vendor in vendors:
             dist = _city_distance_km(user_city, vendor["city"])
             if dist is None:
@@ -751,7 +2291,6 @@ def swipe(category_id):
         vendors = [vendor for _dist, vendor in nearby] + unknown
     vendors = vendors[:8]
 
-    # Lookup one photo per vendor in a single query.
     photo_map = {}
     if vendors:
         ids = [v["vendor_id"] for v in vendors]
@@ -762,14 +2301,99 @@ def swipe(category_id):
         )
         for p in photos:
             photo_map.setdefault(p["vendor_id"], p["photo_url"])
+    return vendors, photo_map
 
-    return render_template("swipe.html",
-                           category=category, vendors=vendors,
-                           photo_map=photo_map, sort=sort,
-                           search=search,
-                           user_city=user_city,
-                           max_distance=max_distance,
-                           supplier=supplier)
+
+@app.route("/discover")
+@login_required
+def discover():
+    """Central matching hub: category chips on top, swipe deck below."""
+    user = current_user()
+    w = _ensure_wedding()
+    search = request.args.get("q", "").strip()
+
+    categories = query(
+        """SELECT vc.category_id, vc.category_name,
+                  COALESCE(SUM(CASE WHEN v.is_active = 1 AND v.vendor_id NOT IN
+                       (SELECT vendor_id FROM vendor_swipes WHERE wedding_id = ?)
+                       THEN 1 ELSE 0 END), 0) AS remaining
+             FROM vendor_categories vc
+             LEFT JOIN vendors v ON v.category_id = vc.category_id
+            GROUP BY vc.category_id, vc.category_name
+           HAVING COUNT(v.vendor_id) > 0
+            ORDER BY vc.category_id""",
+        (w["wedding_id"],),
+    )
+
+    cat_code_map = {name: code for code, name in SUPPLIER_TO_VENDOR_CATEGORY.items()}
+
+    if not categories:
+        return render_template("discover.html", categories=[], category=None,
+                               vendors=[], photo_map={}, search=search,
+                               cat_code_map=cat_code_map)
+
+    requested = request.args.get("category_id", type=int)
+    by_id = {c["category_id"]: c for c in categories}
+    if requested and requested in by_id:
+        active = by_id[requested]
+    else:
+        active = next((c for c in categories if c["remaining"] > 0), categories[0])
+
+    vendors, photo_map = _build_deck(w, user, active["category_id"], search)
+
+    return render_template("discover.html",
+                           categories=categories, category=active,
+                           vendors=vendors, photo_map=photo_map,
+                           search=search, cat_code_map=cat_code_map)
+
+
+@app.route("/swipe")
+@login_required
+def swipe_pick_category():
+    return redirect(url_for("discover"))
+
+
+@app.route("/swipe/<int:category_id>")
+@login_required
+def swipe(category_id):
+    # Legacy URL: matching now lives in the Discover hub.
+    args = {"category_id": category_id}
+    q = request.args.get("q", "").strip()
+    if q:
+        args["q"] = q
+    return redirect(url_for("discover", **args))
+
+
+@app.route("/swipe/<category_ref>")
+@login_required
+def swipe_by_ref(category_ref):
+    # Compatibility for older links that used supplier codes such as /swipe/venue.
+    ref = (category_ref or "").strip()
+    category_id = None
+
+    if ref in SUPPLIER_TO_VENDOR_CATEGORY:
+        row = query(
+            "SELECT category_id FROM vendor_categories WHERE category_name = ?",
+            (SUPPLIER_TO_VENDOR_CATEGORY[ref],),
+            one=True,
+        )
+        category_id = row["category_id"] if row else None
+
+    if category_id is None:
+        row = query(
+            "SELECT category_id FROM vendor_categories WHERE lower(category_name) = lower(?)",
+            (ref.replace("-", " "),),
+            one=True,
+        )
+        category_id = row["category_id"] if row else None
+
+    args = {}
+    if category_id:
+        args["category_id"] = category_id
+    q = request.args.get("q", "").strip()
+    if q:
+        args["q"] = q
+    return redirect(url_for("discover", **args))
 
 
 @app.route("/swipe/<int:category_id>/<int:vendor_id>/<action>", methods=["POST"])
@@ -819,15 +2443,22 @@ def favorites():
             WHERE fv.wedding_id = ? ORDER BY vc.category_name, fv.added_at DESC""",
         (w["wedding_id"],),
     )
+    selected_ids = {
+        r["vendor_id"] for r in query(
+            "SELECT vendor_id FROM selected_vendors WHERE wedding_id=?",
+            (w["wedding_id"],),
+        )
+    }
     grouped = {}
     for r in rows:
         grouped.setdefault(r["category_name"], []).append(r)
-    return render_template("favorites.html", grouped=grouped)
+    return render_template("favorites.html", grouped=grouped, selected_ids=selected_ids)
 
 
 @app.route("/favorites/add/<int:vendor_id>", methods=["POST"])
 @login_required
 def favorites_add(vendor_id):
+    lang = _language_for(current_user())
     w = current_wedding()
     if not w: return redirect(url_for("wedding_profile"))
     db = get_db()
@@ -836,20 +2467,21 @@ def favorites_add(vendor_id):
         (w["wedding_id"], vendor_id),
     )
     db.commit()
-    flash("Added to favorites.", "success")
+    flash(_t(lang, "favorite_added"), "success")
     return redirect(request.referrer or url_for("vendor_detail", vendor_id=vendor_id))
 
 
 @app.route("/favorites/remove/<int:vendor_id>", methods=["POST"])
 @login_required
 def favorites_remove(vendor_id):
+    lang = _language_for(current_user())
     w = current_wedding()
     if not w: return redirect(url_for("wedding_profile"))
     execute(
         "DELETE FROM favorite_vendors WHERE wedding_id=? AND vendor_id=?",
         (w["wedding_id"], vendor_id),
     )
-    flash("Removed from favorites.", "success")
+    flash(_t(lang, "favorite_removed"), "success")
     return redirect(request.referrer or url_for("favorites"))
 
 
@@ -875,32 +2507,37 @@ def selected_vendors():
 @app.route("/selected-vendors/add/<int:vendor_id>", methods=["POST"])
 @login_required
 def selected_vendors_add(vendor_id):
+    lang = _language_for(current_user())
     w = current_wedding()
     if not w: return redirect(url_for("wedding_profile"))
     v = query("SELECT category_id FROM vendors WHERE vendor_id=?", (vendor_id,), one=True)
     if not v: abort(404)
+    price_per_meal = request.form.get("price_per_meal") or None
+    guest_count    = request.form.get("guest_count") or None
     execute(
-        """INSERT INTO selected_vendors (wedding_id, vendor_id, category_id, status)
-           VALUES (?,?,?, 'Considering')""",
-        (w["wedding_id"], vendor_id, v["category_id"]),
+        """INSERT INTO selected_vendors (wedding_id, vendor_id, category_id, status, agreed_price, guest_count)
+           VALUES (?,?,?, 'Considering', ?, ?)""",
+        (w["wedding_id"], vendor_id, v["category_id"], price_per_meal, guest_count),
     )
-    flash("Vendor added to your shortlist.", "success")
+    flash(_t(lang, "shortlist_added"), "success")
     return redirect(url_for("selected_vendors"))
 
 
 @app.route("/selected-vendors/<int:sid>/update", methods=["POST"])
 @login_required
 def selected_vendors_update(sid):
-    status = request.form.get("status", "Considering")
-    price  = request.form.get("agreed_price") or None
-    notes  = request.form.get("notes", "")
+    lang = _language_for(current_user())
+    status      = request.form.get("status", "Considering")
+    price       = request.form.get("agreed_price") or None
+    notes       = request.form.get("notes", "")
+    guest_count = request.form.get("guest_count") or None
     if status not in ("Considering","Contacted","Meeting Scheduled","Booked","Rejected"):
         abort(400)
     execute(
-        "UPDATE selected_vendors SET status=?, agreed_price=?, notes=? WHERE selected_vendor_id=?",
-        (status, price, notes, sid),
+        "UPDATE selected_vendors SET status=?, agreed_price=?, notes=?, guest_count=? WHERE selected_vendor_id=?",
+        (status, price, notes, guest_count, sid),
     )
-    flash("Selection updated.", "success")
+    flash(_t(lang, "selection_updated"), "success")
     return redirect(url_for("selected_vendors"))
 
 
@@ -918,6 +2555,7 @@ def selected_vendors_delete(sid):
 @app.route("/appointments", methods=["GET", "POST"])
 @login_required
 def appointments():
+    lang = _language_for(current_user())
     w = current_wedding()
     if not w: return redirect(url_for("wedding_profile"))
     if request.method == "POST":
@@ -926,14 +2564,14 @@ def appointments():
         location  = request.form.get("location", "")
         notes     = request.form.get("notes", "")
         if not (vendor_id and adate):
-            flash("Vendor and date are required.", "error")
+            flash(_t(lang, "appointment_required"), "error")
         else:
             execute(
                 """INSERT INTO appointments (wedding_id, vendor_id, appointment_date, location, notes)
                    VALUES (?,?,?,?,?)""",
                 (w["wedding_id"], vendor_id, adate, location, notes),
             )
-            flash("Appointment scheduled.", "success")
+            flash(_t(lang, "appointment_scheduled"), "success")
         return redirect(url_for("appointments"))
     rows = query(
         """SELECT a.*, v.business_name, vc.category_name FROM appointments a
@@ -966,13 +2604,14 @@ def appointments_status(aid):
 @app.route("/reviews", methods=["GET", "POST"])
 @login_required
 def reviews():
+    lang = _language_for(current_user())
     w = current_wedding()
     if request.method == "POST":
         vendor_id = request.form.get("vendor_id", type=int)
         rating    = request.form.get("rating", type=int)
         text      = request.form.get("review_text", "").strip()
         if not (vendor_id and rating and 1 <= rating <= 5):
-            flash("Vendor and a 1-5 rating are required.", "error")
+            flash(_t(lang, "review_required"), "error")
         else:
             execute(
                 """INSERT INTO vendor_reviews (vendor_id, user_id, wedding_id, rating, review_text)
@@ -985,7 +2624,7 @@ def reviews():
             )["a"] or 0
             execute("UPDATE vendors SET rating_average=? WHERE vendor_id=?",
                     (round(avg, 2), vendor_id))
-            flash("Review posted.", "success")
+            flash(_t(lang, "review_posted"), "success")
         return redirect(url_for("reviews"))
     rows = query(
         """SELECT vr.*, v.business_name, u.full_name FROM vendor_reviews vr
@@ -1086,11 +2725,11 @@ def analytics():
 
 @app.errorhandler(404)
 def not_found(_e):
-    return render_template("error.html", code=404, message="Page not found"), 404
+    return render_template("error.html", code=404, message=_t(_language_for(current_user()), "page_not_found")), 404
 
 @app.errorhandler(500)
 def server_error(_e):
-    return render_template("error.html", code=500, message="Something went wrong"), 500
+    return render_template("error.html", code=500, message=_t(_language_for(current_user()), "server_error")), 500
 
 
 if __name__ == "__main__":

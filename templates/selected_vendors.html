@@ -1,55 +1,54 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_components.html" import page_hero, empty_state with context %}
 {% block content %}
+{{ page_hero(t('selected_vendors'), t('brand_tagline'), t('liked')) }}
 
-<header class="page-header">
-  <h1>Selected vendors</h1>
-</header>
-
-<div class="card">
+<section class="data-panel">
   {% if rows %}
-  <table class="table">
-    <thead><tr>
-      <th>Vendor</th><th>Category</th><th>Status</th>
-      <th>Agreed price</th><th>Notes</th><th></th>
-    </tr></thead>
-    <tbody>
-      {% for r in rows %}
-        <tr>
-          <td><a href="{{ url_for('vendor_detail', vendor_id=r.vendor_id) }}">{{ r.business_name }}</a></td>
-          <td><span class="badge">{{ r.category_name }}</span></td>
-          <td>
-            <form method="post" action="{{ url_for('selected_vendors_update', sid=r.selected_vendor_id) }}" class="form-inline">
-              <select name="status" onchange="this.form.submit()">
-                {% for s in ['Considering','Contacted','Meeting Scheduled','Booked','Rejected'] %}
-                  <option value="{{ s }}" {% if r.status==s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-              </select>
-              <input type="hidden" name="agreed_price" value="{{ r.agreed_price or '' }}">
-              <input type="hidden" name="notes" value="{{ r.notes or '' }}">
-            </form>
-          </td>
-          <td>
-            <form method="post" action="{{ url_for('selected_vendors_update', sid=r.selected_vendor_id) }}" class="form-inline">
-              <input type="number" name="agreed_price" value="{{ r.agreed_price or '' }}" step="100" placeholder="₪">
-              <input type="hidden" name="status" value="{{ r.status }}">
-              <input type="hidden" name="notes" value="{{ r.notes or '' }}">
-              <button class="btn btn-ghost btn-sm">Save</button>
-            </form>
-          </td>
-          <td>{{ r.notes or '' }}</td>
-          <td>
-            <form method="post" action="{{ url_for('selected_vendors_delete', sid=r.selected_vendor_id) }}"
-                  onsubmit="return confirm('Remove from selected?')">
-              <button class="btn btn-ghost btn-sm">×</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr>
+        <th>{{ t('vendor') }}</th><th>{{ t('category') }}</th><th>{{ t('status') }}</th>
+        <th>{{ t('agreed_price') }}</th><th>{{ t('notes') }}</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td><a href="{{ url_for('vendor_detail', vendor_id=r.vendor_id) }}">{{ r.business_name }}</a></td>
+            <td><span class="badge">{{ td('category', r.category_name) }}</span></td>
+            <td>
+              <form method="post" action="{{ url_for('selected_vendors_update', sid=r.selected_vendor_id) }}" class="form-inline">
+                <select name="status" onchange="this.form.submit()">
+                  {% for s in ['Considering','Contacted','Meeting Scheduled','Booked','Rejected'] %}
+                    <option value="{{ s }}" {% if r.status==s %}selected{% endif %}>{{ td('status', s) }}</option>
+                  {% endfor %}
+                </select>
+                <input type="hidden" name="agreed_price" value="{{ r.agreed_price or '' }}">
+                <input type="hidden" name="notes" value="{{ r.notes or '' }}">
+              </form>
+            </td>
+            <td>
+              <form method="post" action="{{ url_for('selected_vendors_update', sid=r.selected_vendor_id) }}" class="form-inline">
+                <input type="number" name="agreed_price" value="{{ r.agreed_price or '' }}" step="100" placeholder="₪">
+                <input type="hidden" name="status" value="{{ r.status }}">
+                <input type="hidden" name="notes" value="{{ r.notes or '' }}">
+                <button class="btn btn-ghost btn-sm">{{ t('save') }}</button>
+              </form>
+            </td>
+            <td>{{ r.notes or '' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('selected_vendors_delete', sid=r.selected_vendor_id) }}" onsubmit="return confirm('{{ t('remove_selected_confirm') }}')">
+                <button class="icon-btn danger" aria-label="{{ t('remove') }}">{{ icon('close', 16) }}</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-    <p class="muted">You haven't selected any vendors yet.</p>
+    {{ empty_state(t('no_selected_vendors'), '', url_for('favorites'), t('liked'), 'heart') }}
   {% endif %}
-</div>
-
+</section>
 {% endblock %}

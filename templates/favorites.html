@@ -1,63 +1,57 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}Liked Vendors · Vowly{% endblock %}
+{% from "_components.html" import empty_state, vendor_match_card with context %}
+{% block title %}{{ t('liked') }} · Vowly{% endblock %}
 
 {% block content %}
-
-<header class="page-header">
-  <div>
-    <h1>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--rose)" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      Liked Vendors
-    </h1>
-    <p class="muted">Vendors you liked while swiping. Select one to add to your shortlist.</p>
-  </div>
+<header class="page-head">
+  <h1>{{ t('liked') }}</h1>
+  <p class="muted">{{ t('liked_subtitle') }}</p>
 </header>
 
 {% for category, items in grouped.items() %}
-  <section class="card liked-page-section">
-    <h3 class="liked-page-cat">{{ category }}</h3>
-    <div class="liked-page-grid">
+  <section class="fav-section">
+    <h3 class="section-title">{{ td('category', category) }} <span class="section-count">{{ items|length }}</span></h3>
+    <div class="fav-grid">
       {% for v in items %}
-        <div class="liked-page-card">
-          <a class="liked-page-card-photo" href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}"
-             style="background-image:url('{% if v.photo_url %}{{ v.photo_url }}{% else %}https://picsum.photos/seed/{{ v.vendor_id }}/400/300{% endif %}')">
-            <span class="liked-page-badge">{{ icon('star-fill', 12, 'inline-star') }} {{ '%.1f'|format(v.rating_average) if v.rating_average else 'New' }}</span>
-          </a>
-          <div class="liked-page-card-body">
-            <a href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}" class="liked-page-name">{{ v.business_name }}</a>
-            <span class="liked-page-meta muted small">
-              {% if v.city %}{{ icon('pin', 12, 'inline-icon') }} {{ v.city }}{% endif %}
-              {% if v.price_min and v.price_max %}
-                · ₪{{ '%0.0f'|format(v.price_min) }}–₪{{ '%0.0f'|format(v.price_max) }}
-              {% endif %}
-            </span>
-            <div class="liked-page-actions">
-              <a href="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}" class="btn btn-ghost btn-sm">
-                {{ icon('arrow-right', 14) }} View
-              </a>
-              <form method="post" action="{{ url_for('selected_vendors_add', vendor_id=v.vendor_id) }}" style="margin:0">
-                <button class="btn btn-primary btn-sm">{{ icon('check', 14) }} Select</button>
-              </form>
-              <form method="post" action="{{ url_for('favorites_remove', vendor_id=v.vendor_id) }}" style="margin:0">
-                <button class="btn btn-ghost btn-sm liked-remove-btn" title="Remove">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+        {% set is_venue = (v.category_name == 'Venue') %}
+        {{ vendor_match_card(
+          v,
+          url_for('vendor_detail', vendor_id=v.vendor_id),
+          v.photo_url,
+          td('category', v.category_name),
+          t('view'),
+          t('select'),
+          url_for('favorites_remove', vendor_id=v.vendor_id),
+          url_for('selected_vendors_add', vendor_id=v.vendor_id),
+          is_selected=(v.vendor_id in selected_ids),
+          is_venue=is_venue,
+          chosen_label=t('chosen')
+        ) }}
       {% endfor %}
     </div>
   </section>
 {% else %}
-  <div class="card" style="text-align:center;padding:48px 24px">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="1.5" style="margin-bottom:16px;opacity:.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-    <h3>No liked vendors yet</h3>
-    <p class="muted" style="margin-bottom:20px">Swipe right on vendors you love to add them here.</p>
-    <a href="{{ url_for('home') }}" class="btn btn-primary">Start swiping →</a>
-  </div>
+  {{ empty_state(t('no_liked_vendors'), t('liked_subtitle'), url_for('discover'), t('start_swiping'), 'heart') }}
 {% endfor %}
 
+{# Venue selection dialog #}
+<dialog id="venue-select-dialog" class="venue-dialog">
+  <form method="post" id="venue-select-form">
+    <h3 class="venue-dialog-title">{{ t('venue_select_title') }}</h3>
+    <p class="muted venue-dialog-name" id="venue-dialog-name"></p>
+    <div class="field-group">
+      <label class="field-label" for="dlg-price-per-meal">{{ t('price_per_meal') }}</label>
+      <input class="field-input" type="number" id="dlg-price-per-meal" name="price_per_meal" min="0" step="10" placeholder="₪">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="dlg-guest-count">{{ t('guest_count_est') }}</label>
+      <input class="field-input" type="number" id="dlg-guest-count" name="guest_count" min="1" step="1" placeholder="200">
+    </div>
+    <div class="venue-dialog-actions">
+      <button type="submit" class="btn btn-primary">{{ icon('check', 14) }}{{ t('confirm_select') }}</button>
+      <button type="button" class="btn btn-ghost" id="venue-dialog-cancel">{{ t('cancel') }}</button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}
-

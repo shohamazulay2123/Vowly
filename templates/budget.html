@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ t('budget_title') }} · Vowly{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <h1>{{ t('budget_title') }}</h1>
+  <p class="muted">{{ t('budget_subtitle') }}</p>
+</header>
+
+{# Summary totals #}
+{% if totals and totals.estimated %}
+<section class="hm-stats" style="margin-bottom: 1.5rem;">
+  <div class="hm-stat">
+    <span class="hm-stat-num">₪{{ '{:,.0f}'.format(totals.estimated or 0) }}</span>
+    <span class="hm-stat-lbl">{{ t('budget_total_estimated') }}</span>
+  </div>
+  <div class="hm-stat">
+    <span class="hm-stat-num">₪{{ '{:,.0f}'.format(totals.actual or 0) }}</span>
+    <span class="hm-stat-lbl">{{ t('budget_total_actual') }}</span>
+  </div>
+  <div class="hm-stat">
+    <span class="hm-stat-num">₪{{ '{:,.0f}'.format(totals.paid or 0) }}</span>
+    <span class="hm-stat-lbl">{{ t('budget_total_paid') }}</span>
+  </div>
+</section>
+{% if w and w.budget %}
+  {% set budget_total = w.budget %}
+  {% set actual_total = totals.actual or 0 %}
+  {% if actual_total > budget_total %}
+  <div class="flash flash-error">{{ t('budget_over') }}: ₪{{ '{:,.0f}'.format(actual_total - budget_total) }}</div>
+  {% elif budget_total %}
+  <div class="flash flash-success">{{ t('budget_under') }}: ₪{{ '{:,.0f}'.format(budget_total - actual_total) }}</div>
+  {% endif %}
+{% endif %}
+{% endif %}
+
+{# Price per guest #}
+<section class="settings-panel">
+  <h2>{{ t('price_per_guest') }}</h2>
+  <form method="post" class="form">
+    <input type="hidden" name="action" value="update_price_per_guest">
+    <div class="form-row">
+      <label>{{ t('price_per_guest') }}
+        <input type="number" name="price_per_guest" step="50" min="0"
+               value="{{ w.price_per_guest if w and w.price_per_guest else '' }}">
+      </label>
+      {% if w and w.estimated_guests and w.price_per_guest %}
+      <div class="budget-calc muted small" style="align-self: flex-end; padding-bottom: 0.5rem;">
+        {{ t('estimated_guests') }}: {{ w.estimated_guests }} ×
+        ₪{{ '{:,.0f}'.format(w.price_per_guest) }} =
+        ₪{{ '{:,.0f}'.format(w.estimated_guests * w.price_per_guest) }}
+      </div>
+      {% endif %}
+    </div>
+    <button class="btn btn-ghost btn-sm" type="submit">{{ icon('check', 14) }} {{ t('save') }}</button>
+  </form>
+</section>
+
+{# Next payment due #}
+{% if next_due %}
+<section class="settings-panel">
+  <h2>{{ t('next_payment_due') }}</h2>
+  <div class="budget-next-due">
+    <strong>{{ next_due.category_label }}</strong>
+    <span class="muted small">{{ next_due.due_date }}</span>
+    <span class="badge">₪{{ '{:,.0f}'.format((next_due.estimated_amount or 0) - (next_due.paid_amount or 0)) }} {{ t('remaining') }}</span>
+  </div>
+</section>
+{% endif %}
+
+{# Add budget item #}
+<section class="settings-panel">
+  <h2>{{ t('add_budget_item') }}</h2>
+  <form method="post" class="form">
+    <div class="form-row">
+      <label>{{ t('budget_category') }} *
+        <select name="category_label">
+          {% for cat in budget_categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t('estimated_amount') }} (₪) *
+        <input type="number" name="estimated_amount" min="0" step="100" required>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>{{ t('due_date') }}
+        <input type="date" name="due_date">
+      </label>
+      <label>{{ t('payment_status') }}
+        <select name="payment_status">
+          <option value="Not paid">{{ t('not_paid') }}</option>
+          <option value="Deposit paid">{{ t('deposit_paid') }}</option>
+          <option value="Partially paid">{{ t('partially_paid') }}</option>
+          <option value="Paid in full">{{ t('paid_full') }}</option>
+        </select>
+      </label>
+    </div>
+    <label>{{ t('notes') }}
+      <input name="notes" placeholder="{{ t('notes') }}">
+    </label>
+    <button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ t('add_budget_item') }}</button>
+  </form>
+</section>
+
+{# Budget items list #}
+{% if rows %}
+<section class="settings-panel">
+  <div class="budget-list">
+    {% for item in rows %}
+    <div class="budget-item">
+      <div class="budget-item-head">
+        <strong>{{ item.category_label }}</strong>
+        <span class="badge badge-{{ 'paid' if item.payment_status == 'Paid in full' else 'pending' }}">{{ item.payment_status }}</span>
+      </div>
+      <div class="budget-item-nums">
+        <span class="muted small">{{ t('estimated_amount') }}: ₪{{ '{:,.0f}'.format(item.estimated_amount) }}</span>
+        {% if item.actual_amount %}<span class="muted small">{{ t('actual_amount') }}: ₪{{ '{:,.0f}'.format(item.actual_amount) }}</span>{% endif %}
+        {% if item.paid_amount %}<span class="muted small">{{ t('paid_amount') }}: ₪{{ '{:,.0f}'.format(item.paid_amount) }}</span>{% endif %}
+        {% if item.due_date %}<span class="muted small">{{ t('due_date') }}: {{ item.due_date }}</span>{% endif %}
+        {% if item.notes %}<span class="muted small">{{ item.notes }}</span>{% endif %}
+      </div>
+      <div class="budget-item-actions">
+        <form method="post" action="{{ url_for('budget_update', bid=item.budget_id) }}" class="inline-form">
+          <select name="payment_status" onchange="this.form.submit()" class="rsvp-select">
+            <option value="Not paid" {% if item.payment_status == 'Not paid' %}selected{% endif %}>{{ t('not_paid') }}</option>
+            <option value="Deposit paid" {% if item.payment_status == 'Deposit paid' %}selected{% endif %}>{{ t('deposit_paid') }}</option>
+            <option value="Partially paid" {% if item.payment_status == 'Partially paid' %}selected{% endif %}>{{ t('partially_paid') }}</option>
+            <option value="Paid in full" {% if item.payment_status == 'Paid in full' %}selected{% endif %}>{{ t('paid_full') }}</option>
+          </select>
+          <input type="hidden" name="actual_amount" value="{{ item.actual_amount or 0 }}">
+          <input type="hidden" name="paid_amount" value="{{ item.paid_amount or 0 }}">
+          <input type="hidden" name="due_date" value="{{ item.due_date or '' }}">
+          <input type="hidden" name="notes" value="{{ item.notes or '' }}">
+        </form>
+        <form method="post" action="{{ url_for('budget_delete', bid=item.budget_id) }}" onsubmit="return confirm('{{ t('remove_selected_confirm') }}')">
+          <button class="btn btn-ghost btn-sm btn-icon" type="submit">{{ icon('close', 14) }}</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="empty-state">
+  <p class="muted">{{ t('no_budget_items') }}</p>
+</div>
+{% endif %}
+
+{% endblock %}

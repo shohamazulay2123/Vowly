@@ -1,33 +1,39 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_components.html" import page_hero with context %}
 {% block content %}
-<div class="card form-card">
-  <h2>{{ 'Edit' if w else 'Create' }} your wedding profile</h2>
+{{ page_hero(t('profile_title_edit') if w else t('profile_title_create'), t('brand_tagline'), t('home')) }}
+
+<section class="form-card visual-form">
   <form method="post" class="form">
-    <label>Partner's name
-      <input name="partner_name" value="{{ w.partner_name if w else '' }}">
-    </label>
-    <label>Wedding date
-      <input type="date" name="wedding_date" value="{{ w.wedding_date if w else '' }}">
-    </label>
-    <label>Estimated guests
-      <input type="number" name="estimated_guests" min="1" value="{{ w.estimated_guests if w else '' }}">
-    </label>
-    <label>Total budget (₪)
-      <input type="number" name="budget" min="0" step="500" value="{{ w.budget if w else '' }}">
-    </label>
-    <label>City
-      <input name="city" value="{{ w.city if w else '' }}">
-    </label>
-    <label>Venue type preference
+    <label>{{ t('partner_name') }} <input name="partner_name" value="{{ w.partner_name if w else '' }}"></label>
+    <label>{{ t('wedding_date') }} <input type="date" name="wedding_date" value="{{ w.wedding_date if w else '' }}"></label>
+    <label>{{ t('estimated_guests') }} <input type="number" name="estimated_guests" min="1" value="{{ w.estimated_guests if w else '' }}"></label>
+    <label>{{ t('total_budget') }} (₪) <input type="number" name="budget" min="0" step="500" value="{{ w.budget if w else '' }}"></label>
+    <label>{{ t('city') }} <input name="city" value="{{ w.city if w else '' }}"></label>
+    <label>{{ t('venue_type') }}
       <select name="venue_type_preference">
         {% set vp = w.venue_type_preference if w else '' %}
-        <option value="">— choose —</option>
+        <option value="">{{ t('choose') }}</option>
         {% for opt in ['Garden','Hall','Beach','Loft','Vineyard','Rooftop'] %}
-          <option value="{{ opt }}" {% if vp == opt %}selected{% endif %}>{{ opt }}</option>
+          <option value="{{ opt }}" {% if vp == opt %}selected{% endif %}>{{ td('venue_type', opt) }}</option>
         {% endfor %}
       </select>
     </label>
-    <button class="btn btn-primary" type="submit">{{ 'Save changes' if w else 'Create profile' }}</button>
+    <label>{{ t('price_per_guest') }}
+      <input type="number" name="price_per_guest" min="0" step="50"
+             value="{{ w.price_per_guest if w and w.price_per_guest else '' }}">
+    </label>
+    <label>{{ t('ceremony_route_label') }}
+      <select name="ceremony_route">
+        {% set cr = w.ceremony_route if w and w.ceremony_route else '' %}
+        <option value="">{{ t('route_unknown') }}</option>
+        {% for opt in ['rabbinate','private_rabbi','civil_abroad','utah_online','symbolic','other'] %}
+          <option value="{{ opt }}" {% if cr == opt %}selected{% endif %}>{{ t('route_' ~ opt) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">{{ icon('check', 16) }}{{ t('save_changes') if w else t('create_profile') }}</button>
   </form>
-</div>
+</section>
 {% endblock %}

@@ -6,33 +6,180 @@
 {% block content %}
 <div class="auth-split">
 
-  <!-- Left: dynamic image -->
-  <aside class="auth-art">
-    <div class="auth-art-bg" aria-hidden="true"></div>
-    <div class="auth-art-shapes" aria-hidden="true">
-      <span class="orb orb-1"></span>
-      <span class="orb orb-2"></span>
-      <span class="orb orb-3"></span>
-      <span class="orb orb-4"></span>
-      <span class="petal petal-1">{{ icon('petal', 24) }}</span>
-      <span class="petal petal-2">{{ icon('petal', 22) }}</span>
-      <span class="petal petal-3">{{ icon('sparkle', 22) }}</span>
-      <span class="petal petal-4">{{ icon('heart-fill', 20) }}</span>
-      <span class="petal petal-5">{{ icon('petal', 26) }}</span>
-      <span class="petal petal-6">{{ icon('heart-fill', 18) }}</span>
-    </div>
-    <div class="auth-art-overlay">
-      <h1>Every <em>“I do”</em><br>starts with a plan.</h1>
-    </div>
-  </aside>
+  {# ── LEFT: animated app demo panel ── #}
+  <div class="auth-visual" aria-hidden="true">
 
-  <!-- Right: auth panel -->
-  <section class="auth-panel">
-    <div class="auth-card-modern">
-      <a href="{{ url_for('index') }}" class="auth-brand">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Vowly">
-      </a>
+    {# Dynamic wedding-hall backdrop — slow crossfade + Ken Burns zoom #}
+    <div class="av-bg">
+      <div class="av-slide av-slide-1"></div>
+      <div class="av-slide av-slide-2"></div>
+      <div class="av-slide av-slide-3"></div>
+    </div>
+    <div class="av-scrim"></div>
 
+    {# Warm ambient light blooms #}
+    <div class="av-orb av-orb-1"></div>
+    <div class="av-orb av-orb-2"></div>
+
+    {# Floating UI particles #}
+    <div class="av-particle av-p-1 av-p-emoji">📸</div>
+    <div class="av-particle av-p-2 av-p-heart">❤</div>
+    <div class="av-particle av-p-3 av-p-emoji">🎧</div>
+    <div class="av-particle av-p-4 av-p-badge">★ 4.9</div>
+    <div class="av-particle av-p-5 av-p-emoji">💐</div>
+    <div class="av-particle av-p-6 av-p-heart">❤</div>
+    <div class="av-particle av-p-7 av-p-check">✓ נסגר</div>
+    <div class="av-particle av-p-8 av-p-emoji">🏛</div>
+
+    <div class="av-stage">
+
+      {# Headline lockup #}
+      <header class="av-copy">
+        <span class="av-eyebrow">✦ כל ספקי החתונה במקום אחד</span>
+        <h2 class="av-headline">מתאימים עם הספק<br>המושלם. בהחלקה.</h2>
+        <p class="av-tagline">צלם · אולם · קייטרינג · DJ · עיצוב</p>
+      </header>
+
+    <div class="demo-wrap">
+      <div class="demo-phone">
+        <div class="demo-notch"></div>
+
+        {# Push notification — slides down on every few likes #}
+        <div class="demo-push" id="demoToast">
+          <span class="demo-push-icon">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
+          </span>
+          <div class="demo-push-body">
+            <div class="demo-push-head">
+              <strong>Vowly</strong>
+              <span class="demo-push-time">עכשיו</span>
+            </div>
+            <p class="demo-push-text">התאמה חדשה ❤ Studio Lior נוסף למועדפים שלך</p>
+          </div>
+        </div>
+
+        {# Status bar #}
+        <div class="demo-topbar">
+          <span class="demo-time">9:41</span>
+          <div class="demo-brand-pill">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" class="demo-brand-icon" alt="">
+            <span>Vowly</span>
+          </div>
+          <span class="demo-signal-dots"><span></span><span></span><span></span></span>
+        </div>
+
+        {# Category context bar #}
+        <div class="demo-context">
+          <div class="demo-cat-chip" id="demoCatChip">📸 &nbsp;צלמים</div>
+          <div class="demo-prog-dots" id="demoProgDots">
+            <span class="dp dp-done"></span>
+            <span class="dp dp-done"></span>
+            <span class="dp dp-active"></span>
+            <span class="dp"></span>
+            <span class="dp"></span>
+          </div>
+        </div>
+
+        {# Swipe card deck #}
+        <div class="demo-deck" id="demoDeck"></div>
+
+        {# Action buttons #}
+        <div class="demo-actions">
+          <div class="demo-btn-skip">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+          <div class="demo-btn-like" id="demoBtnLike">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>
+          </div>
+          <div class="demo-btn-skip">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+        </div>
+
+        {# Favorites screen overlay #}
+        <div class="demo-screen demo-scr-favs" id="demoFavsScr">
+          <div class="dsc-bar">
+            <span class="dsc-icon">❤</span>
+            <span class="dsc-title">המועדפים שלך</span>
+          </div>
+          <div class="dsf-list">
+            <div class="dsf-row dsf-row-1">
+              <div class="dsf-photo" style="background:linear-gradient(145deg,#F5E2CE,#D9AC86)">📸</div>
+              <div class="dsf-info"><strong>Studio Lior</strong><span>★ 4.9 · תל אביב</span></div>
+              <div class="dsf-booked">✓</div>
+            </div>
+            <div class="dsf-row dsf-row-2">
+              <div class="dsf-photo" style="background:linear-gradient(145deg,#D4EBD0,#8EAF82)">🍽</div>
+              <div class="dsf-info"><strong>FlavorFest</strong><span>★ 4.7 · חיפה</span></div>
+              <div class="dsf-booked">✓</div>
+            </div>
+            <div class="dsf-row dsf-row-3">
+              <div class="dsf-photo" style="background:linear-gradient(145deg,#EFD4E4,#C47FAA)">💐</div>
+              <div class="dsf-info"><strong>Bloom Studio</strong><span>★ 5.0 · תל אביב</span></div>
+              <div class="dsf-badge">מועדף</div>
+            </div>
+          </div>
+          <div class="dsf-count">3 ספקים נשמרו ❤</div>
+        </div>
+
+        {# Planning screen overlay #}
+        <div class="demo-screen demo-scr-plan" id="demoPlanScr">
+          <div class="dsc-bar">
+            <span class="dsc-icon">📋</span>
+            <span class="dsc-title">תכנון החתונה</span>
+          </div>
+          <div class="dsp-progress">
+            <div class="dsp-bar"><div class="dsp-fill"></div></div>
+            <span>60% הושלם</span>
+          </div>
+          <div class="dsp-list">
+            <div class="dsp-item dsp-done"><span class="dsp-chk">✓</span><span>צלם</span><span class="dsp-tag dsp-tag-booked">נסגר</span></div>
+            <div class="dsp-item dsp-done"><span class="dsp-chk">✓</span><span>קייטרינג</span><span class="dsp-tag dsp-tag-booked">נסגר</span></div>
+            <div class="dsp-item dsp-curr"><span class="dsp-chk">◎</span><span>DJ</span><span class="dsp-tag dsp-tag-look">מחפשים</span></div>
+            <div class="dsp-item"><span class="dsp-chk">○</span><span>אולם</span></div>
+            <div class="dsp-item"><span class="dsp-chk">○</span><span>פרחים</span></div>
+            <div class="dsp-item"><span class="dsp-chk">○</span><span>איפור</span></div>
+          </div>
+        </div>
+      </div>
+
+      {# Floating glass chips around the phone #}
+      <div class="av-chip av-chip-1"><span class="av-chip-star">★</span> 4.9 · Studio Lior</div>
+      <div class="av-chip av-chip-2"><span class="av-chip-check">✓</span> נסגר · DJ</div>
+    </div>
+
+      {# Trust strip #}
+      <div class="av-trust">
+        <div><strong>1,200+</strong><span>ספקים מובחרים</span></div>
+        <span class="av-trust-sep"></span>
+        <div><strong>8,500+</strong><span>זוגות מאושרים</span></div>
+        <span class="av-trust-sep"></span>
+        <div><strong>★ 4.9</strong><span>דירוג ממוצע</span></div>
+      </div>
+
+    </div>{# /av-stage #}
+  </div>
+
+  {# ── RIGHT: form side ── #}
+  <div class="auth-screen">
+    <div class="auth-glow auth-glow-1" aria-hidden="true"></div>
+    <div class="auth-glow auth-glow-2" aria-hidden="true"></div>
+    <div class="auth-ring auth-ring-1" aria-hidden="true"></div>
+    <div class="auth-ring auth-ring-2" aria-hidden="true"></div>
+    <div class="auth-ring auth-ring-3" aria-hidden="true"></div>
+
+    <header class="auth-hero">
+      <div class="auth-logo-badge">
+        <span class="auth-logo-halo" aria-hidden="true"></span>
+        <span class="auth-logo-inner">
+          <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Vowly" class="auth-logo">
+        </span>
+      </div>
+      <span class="auth-wordmark">Vowly</span>
+      <h1>{{ t('auth_welcome') }}</h1>
+    </header>
+
+    <section class="auth-card">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flashes">
@@ -44,228 +191,347 @@
       {% endwith %}
 
       <div class="auth-tabs" id="auth-tabs" data-active="{% if mode == 'register' %}register{% else %}login{% endif %}">
-        <a href="{{ url_for('index', mode='login') }}"
-           data-pane="login"
-           class="auth-tab {% if mode != 'register' %}auth-tab-active{% endif %}">Log in</a>
-        <a href="{{ url_for('index', mode='register') }}"
-           data-pane="register"
-           class="auth-tab {% if mode == 'register' %}auth-tab-active{% endif %}">Sign up</a>
+        <a href="{{ url_for('index', mode='login') }}" data-pane="login" class="auth-tab {% if mode != 'register' %}auth-tab-active{% endif %}">{{ t('login') }}</a>
+        <a href="{{ url_for('index', mode='register') }}" data-pane="register" class="auth-tab {% if mode == 'register' %}auth-tab-active{% endif %}">{{ t('sign_up') }}</a>
       </div>
 
-      {# ---------- Login pane ---------- #}
       <div class="auth-pane {% if mode != 'register' %}is-active{% endif %}" id="pane-login" data-pane="login">
-        <h2>Welcome back</h2>
-        <p class="muted">Log in to keep planning your big day.</p>
+        <div class="social-btns">
+          <a href="{{ url_for('auth_provider', provider='google') }}" class="social-btn social-btn-google">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ t('continue_google') }}</span>
+          </a>
+          <a href="{{ url_for('auth_provider', provider='facebook') }}" class="social-btn social-btn-facebook">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            <span>{{ t('continue_facebook') }}</span>
+          </a>
+        </div>
+        <div class="auth-divider"><span>{{ t('or_divider') }}</span></div>
         <form method="post" action="{{ url_for('index') }}" class="form">
           <input type="hidden" name="action" value="login">
-          <label>Email <input type="email" name="email" required autocomplete="email"></label>
-          <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
-          <button class="btn btn-primary btn-block" type="submit">Log in</button>
+          <label>{{ t('email') }} <input type="email" name="email" required autocomplete="email"></label>
+          <label>{{ t('password') }} <input type="password" name="password" required autocomplete="current-password"></label>
+          <button class="btn btn-primary btn-block btn-large" type="submit">{{ t('login') }}</button>
         </form>
-        <p class="muted center">New to Vowly?
-          <a href="{{ url_for('index', mode='register') }}" data-pane-link="register">Create an account</a></p>
+        <p class="muted center auth-switch">{{ t('new_to_vowly') }}
+          <a href="{{ url_for('index', mode='register') }}" data-pane-link="register">{{ t('create_account_link') }}</a></p>
       </div>
 
-      {# ---------- Register pane ---------- #}
       <div class="auth-pane {% if mode == 'register' %}is-active{% endif %}" id="pane-register" data-pane="register">
-        <h2>Create your account</h2>
-        <p class="muted">Start planning your wedding in minutes.</p>
+        <div class="social-btns">
+          <a href="{{ url_for('auth_provider', provider='google') }}" class="social-btn social-btn-google">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ t('continue_google') }}</span>
+          </a>
+          <a href="{{ url_for('auth_provider', provider='facebook') }}" class="social-btn social-btn-facebook">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            <span>{{ t('continue_facebook') }}</span>
+          </a>
+        </div>
+        <div class="auth-divider"><span>{{ t('or_divider') }}</span></div>
         <form method="post" action="{{ url_for('index') }}" class="form" id="register-form">
           <input type="hidden" name="action" value="register">
-          <label>Full name <input name="full_name" autocomplete="name"></label>
-          <label>Email <input type="email" name="email" autocomplete="email"></label>
-          <label>Password <input type="password" name="password" minlength="6" autocomplete="new-password"></label>
+          <label>{{ t('full_name') }} <input name="full_name" autocomplete="name"></label>
+          <label>{{ t('email') }} <input type="email" name="email" autocomplete="email"></label>
+          <label>{{ t('password') }} <input type="password" name="password" minlength="6" autocomplete="new-password"></label>
           <div class="form-row">
-            <label>City
+            <label>{{ t('city') }}
               <select name="city">
-                <option value="" disabled selected>Select city…</option>
-                <option>Acre</option>
-                <option>Afula</option>
-                <option>Arad</option>
-                <option>Ariel</option>
-                <option>Ashdod</option>
-                <option>Ashkelon</option>
-                <option>Bat Yam</option>
-                <option>Beer Sheva</option>
-                <option>Beit Shean</option>
-                <option>Beit Shemesh</option>
-                <option>Bnei Brak</option>
-                <option>Dimona</option>
-                <option>Eilat</option>
-                <option>Gedera</option>
-                <option>Givatayim</option>
-                <option>Hadera</option>
-                <option>Haifa</option>
-                <option>Herzliya</option>
-                <option>Hod HaSharon</option>
-                <option>Holon</option>
-                <option>Jerusalem</option>
-                <option>Kfar Saba</option>
-                <option>Kiryat Ata</option>
-                <option>Kiryat Bialik</option>
-                <option>Kiryat Gat</option>
-                <option>Kiryat Malachi</option>
-                <option>Kiryat Motzkin</option>
-                <option>Kiryat Ono</option>
-                <option>Kiryat Shmona</option>
-                <option>Kiryat Yam</option>
-                <option>Lod</option>
-                <option>Ma'alot-Tarshiha</option>
-                <option>Mitzpe Ramon</option>
-                <option>Modi'in</option>
-                <option>Nahariya</option>
-                <option>Nazareth</option>
-                <option>Nes Ziona</option>
-                <option>Nesher</option>
-                <option>Netanya</option>
-                <option>Netivot</option>
-                <option>Or Akiva</option>
-                <option>Or Yehuda</option>
-                <option>Petah Tikva</option>
-                <option>Ra'anana</option>
-                <option>Ramat Gan</option>
-                <option>Ramat HaSharon</option>
-                <option>Ramla</option>
-                <option>Rehovot</option>
-                <option>Rishon LeZion</option>
-                <option>Rosh HaAyin</option>
-                <option>Safed</option>
-                <option>Sderot</option>
-                <option>Tel Aviv</option>
-                <option>Tiberias</option>
-                <option>Tirat Carmel</option>
-                <option>Yavne</option>
-                <option>Yehud</option>
-                <option>Yokneam</option>
+                <option value="" disabled selected>{{ t('select_city') }}</option>
+                {% for city in city_options %}
+                  <option value="{{ city }}">{{ city_label(city) }}</option>
+                {% endfor %}
               </select>
             </label>
-            <label>Phone <input name="phone" autocomplete="tel"></label>
+            <label>{{ t('phone') }} <input name="phone" autocomplete="tel"></label>
           </div>
 
-          <label>I am the
+          <label>{{ t('i_am_the') }}
             <select name="role" id="role-select">
-              <option value="" disabled selected>Select one…</option>
-              <option value="Bride">Bride</option>
-              <option value="Groom">Groom</option>
+              <option value="" disabled selected>{{ t('select_one') }}</option>
+              <option value="Bride">{{ t('bride') }}</option>
+              <option value="Groom">{{ t('groom') }}</option>
             </select>
           </label>
 
           <fieldset class="partner-fields" id="partner-fields" hidden>
-            <legend>Your partner's details</legend>
-            <label>Partner's name
-              <input name="partner_name" autocomplete="name">
-            </label>
+            <legend>{{ t('partner_details') }}</legend>
+            <label>{{ t('partner_name') }} <input name="partner_name" autocomplete="name"></label>
             <div class="form-row">
-              <label>Partner's email
-                <input type="email" name="partner_email" autocomplete="email">
-              </label>
-              <label>Partner's phone
-                <input name="partner_phone" autocomplete="tel">
-              </label>
+              <label>{{ t('partner_email') }} <input type="email" name="partner_email" autocomplete="email"></label>
+              <label>{{ t('partner_phone') }} <input name="partner_phone" autocomplete="tel"></label>
             </div>
           </fieldset>
 
-          <button class="btn btn-primary btn-block" type="submit">Create account</button>
+          <button class="btn btn-primary btn-block btn-large" type="submit">{{ t('create_account') }}</button>
         </form>
-        <p class="muted center">Already have an account?
-          <a href="{{ url_for('index', mode='login') }}" data-pane-link="login">Log in</a></p>
+        <p class="muted center auth-switch">{{ t('already_account') }}
+          <a href="{{ url_for('index', mode='login') }}" data-pane-link="login">{{ t('login') }}</a></p>
       </div>
+    </section>
 
-      <script>
-        (function () {
-          var tabs    = document.querySelectorAll('#auth-tabs .auth-tab');
-          var tabsBar = document.getElementById('auth-tabs');
-          var panes   = document.querySelectorAll('.auth-pane');
-          var roleSel = document.getElementById('role-select');
-          var fs      = document.getElementById('partner-fields');
-          var regForm = document.getElementById('register-form');
-
-          function setRequired(form, on) {
-            if (!form) return;
-            var fields = form.querySelectorAll('input, select');
-            fields.forEach(function (el) {
-              if (el.type === 'hidden') return;
-              if (on) {
-                if (el.dataset.required === '1') el.setAttribute('required', 'required');
-              } else {
-                if (el.hasAttribute('required')) {
-                  el.dataset.required = '1';
-                  el.removeAttribute('required');
-                }
-              }
-            });
-          }
-          // mark which fields were originally required so we can restore them
-          document.querySelectorAll('.auth-pane form').forEach(function (f) {
-            f.querySelectorAll('[required]').forEach(function (el) { el.dataset.required = '1'; });
-          });
-
-          function syncPartner() {
-            if (!roleSel || !fs) return;
-            var needsPartner = roleSel.value === 'Bride' || roleSel.value === 'Groom';
-            fs.hidden = !needsPartner;
-            fs.querySelectorAll('input').forEach(function (i) {
-              if (needsPartner) {
-                i.dataset.required = '1';
-                if (regForm && regForm.classList.contains('is-active-form')) {
-                  i.setAttribute('required', 'required');
-                }
-              } else {
-                i.removeAttribute('required');
-                i.value = '';
-                delete i.dataset.required;
-              }
-            });
-          }
-          if (roleSel) roleSel.addEventListener('change', syncPartner);
-
-          function activate(mode) {
-            if (!tabsBar) return;
-            tabsBar.dataset.active = mode;
-            tabs.forEach(function (t) {
-              t.classList.toggle('auth-tab-active', t.dataset.pane === mode);
-            });
-            panes.forEach(function (p) {
-              var isActive = p.dataset.pane === mode;
-              p.classList.toggle('is-active', isActive);
-              var form = p.querySelector('form');
-              if (form) {
-                form.classList.toggle('is-active-form', isActive);
-                setRequired(form, isActive);
-              }
-            });
-            // re-evaluate partner field requireds for current mode
-            syncPartner();
-            // update URL without reload
-            try {
-              var url = new URL(window.location.href);
-              url.searchParams.set('mode', mode);
-              window.history.replaceState({}, '', url);
-            } catch (e) {}
-          }
-
-          tabs.forEach(function (t) {
-            t.addEventListener('click', function (e) {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-              e.preventDefault();
-              activate(t.dataset.pane);
-            });
-          });
-          document.querySelectorAll('[data-pane-link]').forEach(function (a) {
-            a.addEventListener('click', function (e) {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-              e.preventDefault();
-              activate(a.dataset.paneLink);
-            });
-          });
-
-          // initial state: ensure inactive pane's fields aren't required
-          var initial = tabsBar ? tabsBar.dataset.active : 'login';
-          activate(initial);
-        })();
-      </script>
-    </div>
-  </section>
+    <p class="auth-foot">© {{ now.year }} Vowly · {{ t('footer') }}</p>
+  </div>
 
 </div>
+
+{# ── Demo animation script ── #}
+<script>
+(function () {
+  var deck    = document.getElementById('demoDeck');
+  var catChip = document.getElementById('demoCatChip');
+  var toast   = document.getElementById('demoToast');
+  var likeBtn = document.getElementById('demoBtnLike');
+  if (!deck) return;
+
+  var vendors = [
+    { name: 'Studio Lior',   cat: '📸  צלמים',    city: 'תל אביב',  rating: '4.9', price: '₪₪₪',
+      bg: 'linear-gradient(145deg,#F5E2CE 0%,#EACBA8 55%,#D9AC86 100%)' },
+    { name: 'FlavorFest',    cat: '🍽  קייטרינג', city: 'חיפה',      rating: '4.7', price: '₪₪',
+      bg: 'linear-gradient(145deg,#D4EBD0 0%,#B2CFA8 55%,#8EAF82 100%)' },
+    { name: 'SoundWave DJ',  cat: '🎧  DJ',        city: 'ירושלים',  rating: '4.8', price: '₪₪',
+      bg: 'linear-gradient(145deg,#D2DBF2 0%,#A8B8E6 55%,#7E96CC 100%)' },
+    { name: 'Eden Hall',     cat: '🏛  אולמות',    city: 'נתניה',    rating: '4.6', price: '₪₪₪₪',
+      bg: 'linear-gradient(145deg,#EFE4CC 0%,#D6C89E 55%,#BCA872 100%)' },
+    { name: 'Bloom Studio',  cat: '💐  פרחים',     city: 'תל אביב',  rating: '5.0', price: '₪₪',
+      bg: 'linear-gradient(145deg,#EFD4E4 0%,#DEA8C8 55%,#C47FAA 100%)' },
+    { name: 'Glam by Noa',   cat: '💄  איפור',     city: 'רחובות',   rating: '4.9', price: '₪₪',
+      bg: 'linear-gradient(145deg,#F2EAD6 0%,#DECCAA 55%,#C8AC7A 100%)' },
+  ];
+
+  var SWIPES_PER_SCREEN = 4;
+  var idx = 0, likeCount = 0, swipeCount = 0, altIdx = 0;
+  var inAltScreen = false;
+
+  var favsScr  = document.getElementById('demoFavsScr');
+  var planScr  = document.getElementById('demoPlanScr');
+  var context  = document.querySelector('.demo-context');
+  var actions  = document.querySelector('.demo-actions');
+  var progDots = document.getElementById('demoProgDots');
+
+  function setSwipeUI(visible) {
+    var op = visible ? '1' : '0';
+    var tr = 'opacity .28s ease';
+    if (context) { context.style.transition = tr; context.style.opacity = op; }
+    if (actions)  { actions.style.transition  = tr; actions.style.opacity  = op; }
+    if (deck)     { deck.style.transition     = tr; deck.style.opacity     = op; }
+  }
+
+  function updateProgDots(vendorIdx) {
+    if (!progDots) return;
+    var dots = progDots.querySelectorAll('.dp');
+    var active = vendorIdx % dots.length;
+    dots.forEach(function(d, i) {
+      d.className = 'dp' + (i < active ? ' dp-done' : i === active ? ' dp-active' : '');
+    });
+  }
+
+  function makeCard(v) {
+    var c = document.createElement('div');
+    c.className = 'demo-card';
+    c.innerHTML =
+      '<div class="demo-card-photo" style="background:' + v.bg + '">' +
+        '<div class="demo-photo-ring"></div>' +
+        '<span class="demo-photo-icon">' + v.cat.split(' ')[0] + '</span>' +
+        '<span class="demo-verify">✓ מאומת</span>' +
+        '<div class="demo-photo-shade"></div>' +
+        '<div class="demo-like-stamp">אוהבים ❤</div>' +
+      '</div>' +
+      '<div class="demo-card-body">' +
+        '<div class="demo-card-top">' +
+          '<span class="demo-card-name">' + v.name + '</span>' +
+          '<span class="demo-card-price">' + v.price + '</span>' +
+        '</div>' +
+        '<div class="demo-card-sub">' +
+          '<span class="demo-cat-tag">' + v.cat + '</span>' +
+          '<span class="demo-mid-dot">·</span>' +
+          '<span class="demo-card-city">' + v.city + '</span>' +
+          '<span class="demo-mid-dot">·</span>' +
+          '<span class="demo-card-rating">★ ' + v.rating + '</span>' +
+        '</div>' +
+      '</div>';
+    return c;
+  }
+
+  function cycle() {
+    if (inAltScreen) return;
+    var v    = vendors[idx % vendors.length];
+    var skip = (idx % 5 === 3);
+    idx++;
+
+    var card = makeCard(v);
+    deck.appendChild(card);
+    if (catChip) catChip.innerHTML = v.cat;
+    updateProgDots(idx);
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { card.classList.add('is-active'); });
+    });
+
+    setTimeout(function () {
+      skip ? skipCard(card) : likeCard(card);
+    }, 2400);
+  }
+
+  function afterSwipe(doAlt) {
+    swipeCount++;
+    if (doAlt && swipeCount >= SWIPES_PER_SCREEN) {
+      swipeCount = 0;
+      showAltScreen();
+    } else {
+      cycle();
+    }
+  }
+
+  function likeCard(card) {
+    card.classList.add('is-liked');
+    likeCount++;
+    spawnHeart();
+    if (likeBtn) { likeBtn.classList.add('is-pulse'); setTimeout(function(){ likeBtn.classList.remove('is-pulse'); }, 500); }
+    if (likeCount % 3 === 0) setTimeout(showToast, 250);
+    setTimeout(function () {
+      if (card.parentNode) card.parentNode.removeChild(card);
+      afterSwipe(true);
+    }, 550);
+  }
+
+  function skipCard(card) {
+    card.classList.add('is-skipped');
+    setTimeout(function () {
+      if (card.parentNode) card.parentNode.removeChild(card);
+      afterSwipe(false);
+    }, 500);
+  }
+
+  function showAltScreen() {
+    inAltScreen = true;
+    altIdx++;
+    var scr = (altIdx % 2 === 1) ? favsScr : planScr;
+    if (!scr) { inAltScreen = false; cycle(); return; }
+    setSwipeUI(false);
+    setTimeout(function () {
+      scr.classList.add('is-active');
+      setTimeout(function () {
+        scr.classList.remove('is-active');
+        setTimeout(function () {
+          setSwipeUI(true);
+          inAltScreen = false;
+          setTimeout(cycle, 420);
+        }, 440);
+      }, 3200);
+    }, 300);
+  }
+
+  function spawnHeart() {
+    var h = document.createElement('div');
+    h.className = 'demo-heart';
+    h.textContent = '❤';
+    deck.appendChild(h);
+    setTimeout(function () { if (h.parentNode) h.parentNode.removeChild(h); }, 750);
+  }
+
+  function showToast() {
+    if (!toast) return;
+    toast.classList.add('is-on');
+    setTimeout(function () { toast.classList.remove('is-on'); }, 2400);
+  }
+
+  setTimeout(cycle, 600);
+})();
+</script>
+
+{# ── Auth tab / form JS ── #}
+<script>
+(function () {
+  var tabs    = document.querySelectorAll('#auth-tabs .auth-tab');
+  var tabsBar = document.getElementById('auth-tabs');
+  var panes   = document.querySelectorAll('.auth-pane');
+  var roleSel = document.getElementById('role-select');
+  var fs      = document.getElementById('partner-fields');
+  var regForm = document.getElementById('register-form');
+
+  function setRequired(form, on) {
+    if (!form) return;
+    form.querySelectorAll('input, select').forEach(function (el) {
+      if (el.type === 'hidden') return;
+      if (on) {
+        if (el.dataset.required === '1') el.setAttribute('required', 'required');
+      } else if (el.hasAttribute('required')) {
+        el.dataset.required = '1';
+        el.removeAttribute('required');
+      }
+    });
+  }
+  document.querySelectorAll('.auth-pane form').forEach(function (f) {
+    f.querySelectorAll('[required]').forEach(function (el) { el.dataset.required = '1'; });
+  });
+
+  function syncPartner() {
+    if (!roleSel || !fs) return;
+    var need = roleSel.value === 'Bride' || roleSel.value === 'Groom';
+    fs.hidden = !need;
+    fs.querySelectorAll('input').forEach(function (i) {
+      if (need) {
+        i.dataset.required = '1';
+        if (regForm && regForm.classList.contains('is-active-form')) i.setAttribute('required', 'required');
+      } else {
+        i.removeAttribute('required');
+        i.value = '';
+        delete i.dataset.required;
+      }
+    });
+  }
+  if (roleSel) roleSel.addEventListener('change', syncPartner);
+
+  function activate(mode) {
+    if (!tabsBar) return;
+    tabsBar.dataset.active = mode;
+    tabs.forEach(function (t) { t.classList.toggle('auth-tab-active', t.dataset.pane === mode); });
+    panes.forEach(function (p) {
+      var isActive = p.dataset.pane === mode;
+      p.classList.toggle('is-active', isActive);
+      var form = p.querySelector('form');
+      if (form) {
+        form.classList.toggle('is-active-form', isActive);
+        setRequired(form, isActive);
+      }
+    });
+    syncPartner();
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('mode', mode);
+      window.history.replaceState({}, '', url);
+    } catch (e) {}
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+      e.preventDefault();
+      activate(t.dataset.pane);
+    });
+  });
+  document.querySelectorAll('[data-pane-link]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+      e.preventDefault();
+      activate(a.dataset.paneLink);
+    });
+  });
+  activate(tabsBar ? tabsBar.dataset.active : 'login');
+})();
+</script>
 {% endblock %}

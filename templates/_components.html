@@ -1,0 +1,103 @@
+{% from "_icons.html" import icon, supplier_icon %}
+
+{% macro page_hero(title, subtitle='', kicker='', action_href='', action_label='', action_icon='arrow-right', cls='') -%}
+<header class="page-head {{ cls }}">
+  <div class="page-head-copy">
+    {% if kicker %}<span class="eyebrow">{{ kicker }}</span>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if action_href and action_label %}
+    <a class="btn btn-primary" href="{{ action_href }}">{{ icon(action_icon, 16) }}{{ action_label }}</a>
+  {% endif %}
+</header>
+{%- endmacro %}
+
+{% macro stat_tile(value, label, icon_name='sparkle', tone='clay') -%}
+<div class="stat-card tone-{{ tone }}">
+  <span class="stat-icon">{{ icon(icon_name, 20) }}</span>
+  <strong>{{ value }}</strong>
+  <span>{{ label }}</span>
+</div>
+{%- endmacro %}
+
+{% macro empty_state(title, subtitle='', href='', label='', icon_name='heart') -%}
+<section class="empty-state">
+  <div class="empty-icon">{{ icon(icon_name, 42) }}</div>
+  <h3>{{ title }}</h3>
+  {% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}
+  {% if href and label %}<a class="btn btn-primary" href="{{ href }}">{{ label }}</a>{% endif %}
+</section>
+{%- endmacro %}
+
+{% macro vendor_match_card(v, href, photo_url='', category='', primary_label='', secondary_label='', remove_action='', select_action='', is_selected=false, is_venue=false, chosen_label='') -%}
+<article class="match-card">
+  <a class="match-card-photo" href="{{ href }}" style="background-image:url('{{ photo_url or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/640/520') }}')">
+    <span class="floating-badge">{{ icon('star-fill', 12, 'inline-star') }} {{ '%.1f'|format(v.rating_average) if v.rating_average else t('new') }}</span>
+  </a>
+  <div class="match-card-body">
+    {% if category %}<span class="badge">{{ category }}</span>{% endif %}
+    <a class="match-card-title" href="{{ href }}">{{ v.business_name }}</a>
+    <p class="muted small">
+      {% if v.city %}{{ icon('pin', 13) }} {{ city_label(v.city) }}{% endif %}
+      {% if v.price_min and v.price_max %}
+        <span class="dot-sep">·</span> ₪{{ '%0.0f'|format(v.price_min) }}–₪{{ '%0.0f'|format(v.price_max) }}
+        {% if is_venue %}<span class="price-unit"> {{ t('per_meal') }}</span>{% endif %}
+      {% endif %}
+    </p>
+    <div class="match-card-actions">
+      {% if primary_label %}<a class="btn btn-ghost btn-sm" href="{{ href }}">{{ primary_label }}</a>{% endif %}
+      {% if is_selected %}
+        <span class="btn btn-chosen btn-sm">{{ icon('check', 14) }}{{ chosen_label or t('chosen') }}</span>
+      {% elif select_action %}
+        {% if is_venue %}
+          <button class="btn btn-primary btn-sm"
+                  type="button"
+                  data-venue-select="{{ select_action }}"
+                  data-venue-name="{{ v.business_name }}">
+            {{ icon('check', 14) }}{{ secondary_label }}
+          </button>
+        {% else %}
+          <form method="post" action="{{ select_action }}">
+            <button class="btn btn-primary btn-sm" type="submit">{{ icon('check', 14) }}{{ secondary_label }}</button>
+          </form>
+        {% endif %}
+      {% endif %}
+      {% if remove_action %}
+        <form method="post" action="{{ remove_action }}">
+          <button class="icon-btn danger" type="submit" title="{{ t('remove') }}" aria-label="{{ t('remove') }}">{{ icon('close', 16) }}</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{%- endmacro %}
+
+{% macro supplier_match_card(s, href='', cat_id='', category='', static=false) -%}
+{% set status_class = 'status-' ~ (s.status|replace(' ','-')|lower) %}
+{% set tag %}
+  <span class="status-pill status-pill-{{ s.status|replace(' ','-')|lower }}">
+    <span class="dot dot-status" aria-hidden="true"></span>{{ td('status', s.status) }}
+  </span>
+{% endset %}
+{% if href and not static %}
+<a id="sup-{{ s.code }}" class="supplier-card supplier-link {{ status_class }}" href="{{ href }}"
+   data-category="{{ category }}" data-status="{{ s.status }}" data-name="{{ supplier_label(s)|lower }}" data-supplier-code="{{ s.code }}">
+  <span class="supplier-icon" aria-hidden="true">{{ supplier_icon(s.code, 22) }}</span>
+  <span class="supplier-id">
+    <span class="supplier-name">{{ supplier_label(s) }}</span>
+    {{ tag }}
+  </span>
+  <span class="supplier-trail" aria-hidden="true">{{ icon('chevron-right', 18) }}</span>
+</a>
+{% else %}
+<div id="sup-{{ s.code }}" class="supplier-card supplier-card-static {{ status_class }}"
+     data-category="{{ category }}" data-status="{{ s.status }}" data-name="{{ supplier_label(s)|lower }}" data-supplier-code="{{ s.code }}">
+  <span class="supplier-icon" aria-hidden="true">{{ supplier_icon(s.code, 22) }}</span>
+  <span class="supplier-id">
+    <span class="supplier-name">{{ supplier_label(s) }}</span>
+    {{ tag }}
+  </span>
+</div>
+{% endif %}
+{%- endmacro %}

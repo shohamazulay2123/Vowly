@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, supplier_icon %}
+{% block title %}{{ t('discover_title') }} · Vowly{% endblock %}
+{% block body_class %}discover-page{% endblock %}
+
+{% block content %}
+
+<header class="disc-head">
+  <div>
+    <h1>{{ t('discover_title') }}</h1>
+    <p class="muted disc-sub">{{ t('discover_subtitle') }}</p>
+  </div>
+  {% if category %}
+  <form method="get" class="disc-search" id="disc-search-form" action="{{ url_for('discover') }}"
+        data-category-id="{{ category.category_id }}">
+    <input type="hidden" name="category_id" value="{{ category.category_id }}">
+    <span class="cmd-search-icon" aria-hidden="true">{{ icon('search', 17) }}</span>
+    <input type="search" name="q" value="{{ search or '' }}"
+           placeholder="{{ t('search_supplier') }}" autocomplete="off"
+           aria-autocomplete="list" aria-expanded="false" aria-controls="disc-live-results">
+    <div class="disc-live-results" id="disc-live-results" role="listbox" hidden></div>
+  </form>
+  {% endif %}
+</header>
+
+{# ────────────── Category chips ────────────── #}
+{% if categories %}
+<div class="chip-row" id="chip-row">
+  {% for c in categories %}
+    <a class="chip{% if category and c.category_id == category.category_id %} is-active{% endif %}{% if not c.remaining %} is-done{% endif %}"
+       href="{{ url_for('discover', category_id=c.category_id) }}">
+      {{ supplier_icon(cat_code_map.get(c.category_name, ''), 16) }}
+      <span>{{ td('category', c.category_name) }}</span>
+      {% if c.remaining %}<span class="chip-count">{{ c.remaining }}</span>
+      {% else %}<span class="chip-done">{{ icon('check', 12) }}</span>{% endif %}
+    </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ────────────── Swipe stage ────────────── #}
+<div class="swipe-stage" id="swipe-stage"
+     {% if category %}data-category-id="{{ category.category_id }}"{% endif %}
+     data-sort="recommended">
+
+  {% if vendors %}
+    <div class="swipe-deck" id="swipe-deck">
+      {% for v in vendors %}
+        <article class="swipe-card"
+                 data-vendor-id="{{ v.vendor_id }}"
+                 data-vendor-name="{{ v.business_name|e }}"
+                 data-vendor-city="{{ city_label(v.city)|e }}"
+                 data-vendor-rating="{{ '%.1f'|format(v.rating_average) if v.rating_average else '' }}"
+                 data-vendor-photo="{{ photo_map.get(v.vendor_id) or ('https://picsum.photos/seed/' ~ v.vendor_id ~ '/800/600') }}"
+                 data-vendor-url="{{ url_for('vendor_detail', vendor_id=v.vendor_id) }}"
+                 data-vendor-desc="{{ (v.description or '')|e }}"
+                 data-vendor-price="{{ ('₪%0.0f - ₪%0.0f'|format(v.price_min, v.price_max)) if v.price_min and v.price_max else '' }}"
+                 data-vendor-address="{{ (v.address or '')|e }}"
+                 data-vendor-phone="{{ (v.phone or '')|e }}"
+                 data-vendor-email="{{ (v.email or '')|e }}"
+                 data-vendor-website="{{ (v.website or '')|e }}"
+                 data-vendor-instagram="{{ (v.instagram_url or '')|e }}"
+                 data-vendor-cat="{{ td('category', category.category_name)|e }}"
+                 data-vendor-review-count="{{ v.review_count or 0 }}"
+                 style="--depth: {{ loop.index0 }};"
+                 tabindex="0"
+                 role="button"
+                 aria-label="{{ v.business_name }}">
+          <div class="swipe-card-inner">
+            <img class="swipe-card-img"
+                 src="{{ photo_map.get(v.vendor_id) or 'https://picsum.photos/seed/' ~ v.vendor_id ~ '/800/600' }}"
+                 alt="{{ v.business_name }}"
+                 draggable="false">
+            <span class="swipe-tag swipe-tag-like">{{ t('like') }}</span>
+            <span class="swipe-tag swipe-tag-skip">{{ t('skip') }}</span>
+            <div class="swipe-card-scrim" aria-hidden="true"></div>
+            <div class="swipe-card-body">
+              <span class="swipe-card-badge">{{ td('category', category.category_name) }}</span>
+              <h2>{{ v.business_name }}</h2>
+              <p class="swipe-card-meta">
+                {% if v.city %}{{ icon('pin', 13) }} {{ city_label(v.city) }}{% endif %}
+                {% if v.rating_average %}<span class="dot-sep">·</span>{{ icon('star-fill', 13, 'inline-star') }} {{ '%.1f'|format(v.rating_average) }}{% endif %}
+                {% if v.price_min and v.price_max %}<span class="dot-sep">·</span>₪{{ '%0.0f'|format(v.price_min) }}–₪{{ '%0.0f'|format(v.price_max) }}{% endif %}
+              </p>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <div class="swipe-actions" id="swipe-actions">
+      <button id="btn-skip" class="swipe-btn swipe-btn-skip" aria-label="{{ t('skip') }}" title="{{ t('skip') }}">
+        {{ icon('close', 26) }}
+      </button>
+      <button id="btn-info" class="swipe-btn swipe-btn-info" aria-label="{{ t('more_info') }}" title="{{ t('more_info') }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
+        </svg>
+      </button>
+      <button id="btn-like" class="swipe-btn swipe-btn-like" aria-label="{{ t('like') }}" title="{{ t('like') }}">
+        {{ icon('heart-fill', 26) }}
+      </button>
+    </div>
+
+    <p class="swipe-hint muted small">{{ t('tap_card_hint') }}</p>
+  {% endif %}
+
+  {# ────────────── Empty / caught-up state ────────────── #}
+  <div class="swipe-empty" id="swipe-empty" {% if vendors %}hidden{% endif %}>
+    <div class="swipe-empty-icon">{{ icon('rings', 46) }}</div>
+    <h3>{{ t('all_caught_up') }}</h3>
+    <p class="muted">{{ t('caught_up_sub') }}</p>
+    {% set next_cat = (categories | selectattr('remaining') | rejectattr('category_id', 'equalto', category.category_id if category else 0) | list | first) if categories else none %}
+    {% if next_cat %}
+      <a href="{{ url_for('discover', category_id=next_cat.category_id) }}" class="btn btn-primary btn-large">
+        {{ td('category', next_cat.category_name) }} {{ icon('arrow-right' if text_dir == 'ltr' else 'arrow-left', 16) }}
+      </a>
+    {% else %}
+      <a href="{{ url_for('favorites') }}" class="btn btn-primary btn-large">{{ t('see_all') }}</a>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ────────────── Liked strip (JS populates on Like) ────────────── #}
+<div class="liked-strip" id="liked-strip-swipe" style="display:none">
+  <div class="liked-strip-head">
+    <h3 class="liked-strip-title">
+      {{ icon('heart-fill', 15) }} {{ t('liked') }} <span id="liked-swipe-count">0</span>
+    </h3>
+    <a href="{{ url_for('favorites') }}" class="dash-section-link">{{ t('see_all') }}</a>
+  </div>
+  <div class="liked-scroll" id="liked-scroll-swipe"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+{# ────────────── Vendor profile sheet ────────────── #}
+<div class="vsheet-backdrop" id="vsheet-backdrop" hidden aria-hidden="true"></div>
+<aside class="vsheet" id="vsheet" hidden
+       role="dialog" aria-modal="true" aria-labelledby="vsheet-name">
+  <div class="vsheet-handle"></div>
+  <div class="vsheet-photo" id="vsheet-photo" role="img" aria-label="Vendor photo"></div>
+  <div class="vsheet-body">
+    <div class="vsheet-meta-top">
+      <span class="badge" id="vsheet-badge"></span>
+      <span class="vsheet-rating" id="vsheet-rating"></span>
+    </div>
+    <h2 class="vsheet-name" id="vsheet-name"></h2>
+    <p class="muted small vsheet-city" id="vsheet-city"></p>
+    <p class="vsheet-desc muted" id="vsheet-desc"></p>
+    <div class="vsheet-details" id="vsheet-details"></div>
+    <div class="vsheet-cta">
+      <button id="vsheet-like" class="btn btn-primary btn-large">
+        {{ icon('heart-fill', 18) }} {{ t('like') }}
+      </button>
+      <button id="vsheet-skip" class="btn btn-ghost btn-large vsheet-skip">{{ t('skip') }}</button>
+      <a id="vsheet-profile-link" href="#"
+         class="btn btn-ghost btn-sm vsheet-profile-link"
+         target="_blank" rel="noopener noreferrer">{{ t('view_profile') }}</a>
+    </div>
+  </div>
+</aside>
+
+{% endblock %}

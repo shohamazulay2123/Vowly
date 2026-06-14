@@ -1,123 +1,67 @@
 {% extends "base.html" %}
+{% from "_components.html" import page_hero, stat_tile with context %}
 {% block content %}
-
-<header class="page-header">
-  <h1>Analytics</h1>
-  <p class="muted">Real SQL with JOIN, GROUP BY, HAVING, COUNT, AVG, SUM, ORDER BY.</p>
-</header>
+{{ page_hero(t('analytics'), t('analytics_subtitle'), t('vendors')) }}
 
 <section class="grid grid-4">
-  <div class="card kpi"><span class="kpi-label">Users</span><span class="kpi-value">{{ totals.users }}</span></div>
-  <div class="card kpi"><span class="kpi-label">Weddings</span><span class="kpi-value">{{ totals.weddings }}</span></div>
-  <div class="card kpi"><span class="kpi-label">Vendors</span><span class="kpi-value">{{ totals.vendors }}</span></div>
-  <div class="card kpi"><span class="kpi-label">Reviews</span><span class="kpi-value">{{ totals.reviews }}</span></div>
+  {{ stat_tile(totals.users, t('users'), 'heart') }}
+  {{ stat_tile(totals.weddings, t('weddings'), 'rings') }}
+  {{ stat_tile(totals.vendors, t('vendors'), 'sparkle') }}
+  {{ stat_tile(totals.reviews, t('reviews'), 'star') }}
 </section>
 
 <div class="grid grid-2">
-  <div class="card">
-    <h3>Vendors per category</h3>
-    <table class="table">
-      <thead><tr><th>Category</th><th>Vendors</th></tr></thead>
-      <tbody>
-        {% for r in vendors_by_cat %}
-          <tr><td>{{ r.category_name }}</td><td>{{ r.total_vendors }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% set tables = [
+    (t('vendors_per_category'), vendors_by_cat, [t('category'), t('vendors')], ['category_name','total_vendors']),
+    (t('avg_rating_per_category'), avg_rating_by_cat, [t('category'), t('average_rating'), t('reviews')], ['category_name','average_rating','reviews']),
+    (t('most_liked_vendors'), most_liked, [t('vendor'), t('likes')], ['business_name','total_likes']),
+    (t('most_skipped_vendors'), most_skipped, [t('vendor'), t('skips')], ['business_name','total_skips']),
+    (t('popular_categories'), popular_categories, [t('category'), t('interactions')], ['category_name','interactions']),
+    (t('top_cities'), top_cities, [t('city'), t('vendors')], ['city','vendor_count']),
+    (t('checklist_progress'), checklist_progress, [t('couple'), t('total'), t('completed')], ['full_name','total_items','completed_items']),
+    (t('elite_vendors'), elite_vendors, [t('vendor'), t('category'), t('average_rating'), t('reviews')], ['business_name','category_name','avg_rating','reviews'])
+  ] %}
 
-  <div class="card">
-    <h3>Average rating per category (JOIN + AVG + GROUP BY)</h3>
-    <table class="table">
-      <thead><tr><th>Category</th><th>Avg rating</th><th>Reviews</th></tr></thead>
-      <tbody>
-        {% for r in avg_rating_by_cat %}
-          <tr><td>{{ r.category_name }}</td><td>{{ r.average_rating }}</td><td>{{ r.reviews }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% for title, rows, heads, keys in tables %}
+  <section class="data-panel">
+    <h3>{{ title }}</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr>{% for h in heads %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              {% for key in keys %}
+                <td>
+                  {% if key == 'category_name' %}{{ td('category', r[key]) }}
+                  {% elif key == 'city' %}{{ city_label(r[key]) }}
+                  {% else %}{{ r[key] }}{% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endfor %}
 
-  <div class="card">
-    <h3>Most liked vendors</h3>
-    <table class="table">
-      <thead><tr><th>Vendor</th><th>Likes</th></tr></thead>
-      <tbody>
-        {% for r in most_liked %}<tr><td>{{ r.business_name }}</td><td>{{ r.total_likes }}</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Most skipped vendors</h3>
-    <table class="table">
-      <thead><tr><th>Vendor</th><th>Skips</th></tr></thead>
-      <tbody>
-        {% for r in most_skipped %}<tr><td>{{ r.business_name }}</td><td>{{ r.total_skips }}</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Most popular categories (by swipe interactions)</h3>
-    <table class="table">
-      <thead><tr><th>Category</th><th>Interactions</th></tr></thead>
-      <tbody>
-        {% for r in popular_categories %}<tr><td>{{ r.category_name }}</td><td>{{ r.interactions }}</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Top cities by vendor count</h3>
-    <table class="table">
-      <thead><tr><th>City</th><th>Vendors</th></tr></thead>
-      <tbody>
-        {% for r in top_cities %}<tr><td>{{ r.city }}</td><td>{{ r.vendor_count }}</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Checklist progress per wedding (JOIN + COUNT + SUM CASE)</h3>
-    <table class="table">
-      <thead><tr><th>Couple</th><th>Total</th><th>Completed</th></tr></thead>
-      <tbody>
-        {% for r in checklist_progress %}
-          <tr><td>{{ r.full_name }}</td><td>{{ r.total_items }}</td><td>{{ r.completed_items }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Budget estimated vs actual (SUM + GROUP BY)</h3>
-    <table class="table">
-      <thead><tr><th>Category</th><th>Estimated</th><th>Actual</th></tr></thead>
-      <tbody>
-        {% for r in budget_by_cat %}
-          <tr>
-            <td>{{ r.category_name }}</td>
-            <td>₪{{ '%0.0f'|format(r.estimated_total or 0) }}</td>
-            <td>₪{{ '%0.0f'|format(r.actual_total or 0) }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>Elite vendors (HAVING AVG(rating) ≥ 4.5)</h3>
-    <table class="table">
-      <thead><tr><th>Vendor</th><th>Category</th><th>Avg rating</th><th>Reviews</th></tr></thead>
-      <tbody>
-        {% for r in elite_vendors %}
-          <tr><td>{{ r.business_name }}</td><td>{{ r.category_name }}</td>
-              <td>{{ r.avg_rating }}</td><td>{{ r.reviews }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <section class="data-panel">
+    <h3>{{ t('budget_estimated_actual') }}</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>{{ t('category') }}</th><th>{{ t('estimated') }}</th><th>{{ t('actual') }}</th></tr></thead>
+        <tbody>
+          {% for r in budget_by_cat %}
+            <tr>
+              <td>{{ td('category', r.category_name) }}</td>
+              <td>₪{{ '%0.0f'|format(r.estimated_total or 0) }}</td>
+              <td>₪{{ '%0.0f'|format(r.actual_total or 0) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
-
 {% endblock %}

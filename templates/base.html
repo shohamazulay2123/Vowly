@@ -2,63 +2,79 @@
 <html lang="{{ lang }}" dir="{{ text_dir }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F3EC">
   <title>{% block title %}{{ t('app_title') }}{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Noto+Serif+Hebrew:wght@500;600;700&family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 
 {% if not self.hide_chrome()|trim %}
-<nav class="navbar" id="main-nav">
-  <a class="brand" href="{{ url_for('index') }}">
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Vowly" class="brand-logo">
+
+<header class="topbar">
+  <a class="brand" href="{{ url_for('home') if user else url_for('index') }}">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="brand-mark">
     <span class="brand-name">Vowly</span>
   </a>
 
-  <!-- hamburger (visible on mobile only) -->
-  <button class="nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-    <span></span><span></span><span></span>
-  </button>
+  {% if user %}
+  <nav class="topnav topnav-app" aria-label="{{ t('main_navigation') }}">
+    <a href="{{ url_for('home') }}" class="topnav-link{% if request.endpoint == 'home' %} is-active{% endif %}">{{ t('home') }}</a>
+    <a href="{{ url_for('plan') }}" class="topnav-link{% if request.endpoint in ('plan', 'checklist', 'onboarding') %} is-active{% endif %}">{{ t('plan') }}</a>
+    <a href="{{ url_for('discover') }}" class="topnav-link{% if request.endpoint == 'discover' %} is-active{% endif %}">{{ t('discover') }}</a>
+    <a href="{{ url_for('favorites') }}" class="topnav-link{% if request.endpoint == 'favorites' %} is-active{% endif %}">{{ t('liked') }}{% if liked_count %}<span class="nav-badge">{{ liked_count }}</span>{% endif %}</a>
+    <a href="{{ url_for('settings') }}" class="topnav-link{% if request.endpoint in ('settings', 'profile', 'wedding_profile', 'appointments', 'reviews', 'analytics', 'selected_vendors') %} is-active{% endif %}">{{ t('profile') }}</a>
+    <a href="{{ url_for('logout') }}" class="topnav-logout">{{ t('logout') }}</a>
+  </nav>
+  {% else %}
+  <nav class="topnav">
+    <a href="{{ url_for('index', mode='login') }}" class="topnav-link">{{ t('login') }}</a>
+    <a href="{{ url_for('index', mode='register') }}" class="btn btn-primary btn-sm">{{ t('sign_up') }}</a>
+  </nav>
+  {% endif %}
+</header>
 
-  <div class="nav-links" id="nav-links">
-    {% if user %}
-      <a href="{{ url_for('home') }}">{{ t('home') }}</a>
-      <a href="{{ url_for('favorites') }}" class="nav-liked-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-2px"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        {{ t('liked') }}{% if liked_count %}<span class="nav-badge">{{ liked_count }}</span>{% endif %}
-      </a>
-      <a href="{{ url_for('settings') }}">{{ t('settings') }}</a>
-      <a class="nav-cta" href="{{ url_for('logout') }}">{{ t('logout') }}</a>
-    {% else %}
-      <a href="{{ url_for('index', mode='login') }}">{{ t('login') }}</a>
-      <a class="nav-cta" href="{{ url_for('index', mode='register') }}">{{ t('sign_up') }}</a>
-    {% endif %}
-  </div>
+{% if user %}
+<nav class="tabbar" aria-label="{{ t('main_navigation') }}">
+  <a href="{{ url_for('home') }}" class="tab{% if request.endpoint == 'home' %} is-active{% endif %}">
+    <span class="tab-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
+    </span>
+    <span class="tab-label">{{ t('home') }}</span>
+  </a>
+  <a href="{{ url_for('plan') }}" class="tab{% if request.endpoint in ('plan', 'checklist', 'onboarding') %} is-active{% endif %}">
+    <span class="tab-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/><path d="M9 2.5h6"/></svg>
+    </span>
+    <span class="tab-label">{{ t('plan') }}</span>
+  </a>
+  <a href="{{ url_for('discover') }}" class="tab{% if request.endpoint == 'discover' %} is-active{% endif %}">
+    <span class="tab-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="4" width="13" height="17" rx="2.5" transform="rotate(6 13 12.5)"/><path d="M7.5 6.5 5 7.2a2.5 2.5 0 0 0-1.8 3l2.7 10a2.5 2.5 0 0 0 3 1.8l1.6-.4"/><path d="M13.7 15.4s-3-2-3-4.3c0-1.2 1-2 2.1-1.7.5.1.9.5 1.2 1 .5-.4 1-.6 1.5-.5 1.1.2 1.7 1.3 1.3 2.4-.7 2.1-3.1 3.1-3.1 3.1z" fill="currentColor" stroke="none"/></svg>
+    </span>
+    <span class="tab-label">{{ t('discover') }}</span>
+  </a>
+  <a href="{{ url_for('favorites') }}" class="tab{% if request.endpoint == 'favorites' %} is-active{% endif %}">
+    <span class="tab-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="{{ 'currentColor' if request.endpoint == 'favorites' else 'none' }}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>
+      {% if liked_count %}<span class="tab-badge">{{ liked_count }}</span>{% endif %}
+    </span>
+    <span class="tab-label">{{ t('liked') }}</span>
+  </a>
+  <a href="{{ url_for('settings') }}" class="tab{% if request.endpoint in ('settings', 'profile', 'wedding_profile', 'appointments', 'reviews', 'analytics', 'selected_vendors') %} is-active{% endif %}">
+    <span class="tab-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></svg>
+    </span>
+    <span class="tab-label">{{ t('profile') }}</span>
+  </a>
 </nav>
-<script>
-  (function(){
-    var btn = document.getElementById('nav-burger');
-    var links = document.getElementById('nav-links');
-    if (!btn) return;
-    btn.addEventListener('click', function(){
-      var open = links.classList.toggle('nav-open');
-      btn.setAttribute('aria-expanded', open);
-      btn.classList.toggle('is-open', open);
-    });
-    // close on link click
-    links.querySelectorAll('a').forEach(function(a){
-      a.addEventListener('click', function(){
-        links.classList.remove('nav-open');
-        btn.classList.remove('is-open');
-        btn.setAttribute('aria-expanded', 'false');
-      });
-    });
-  })();
-</script>
+{% endif %}
 
-<main class="container">
+<main class="shell">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flashes">
@@ -73,9 +89,10 @@
 </main>
 
 <footer class="footer">
-  <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Vowly" class="footer-logo">
+  <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="footer-logo">
   <p>© {{ now.year }} Vowly · {{ t('footer') }}</p>
 </footer>
+
 {% else %}
   {{ self.content() }}
 {% endif %}
@@ -83,6 +100,15 @@
 {# placeholder block — child templates set this to '1' to hide chrome #}
 {% block hide_chrome %}{% endblock %}
 
+<script>
+  window.VOWLY_I18N = {
+    saved: {{ t('saved')|tojson }},
+    couldNotSave: {{ t('could_not_save')|tojson }},
+    bookedRatio: {{ t('booked_ratio')|tojson }},
+    categoryMeta: {{ t('category_meta')|tojson }},
+    website: {{ ('Website' if lang == 'en' else 'אתר')|tojson }}
+  };
+</script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

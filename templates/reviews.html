@@ -1,28 +1,26 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_components.html" import page_hero, empty_state with context %}
 {% block content %}
+{{ page_hero(t('reviews'), t('brand_tagline'), t('star')) }}
 
-<header class="page-header">
-  <h1>Reviews</h1>
-</header>
-
-<div class="card">
-  <h3>Leave a review</h3>
+<section class="data-panel">
+  <h3>{{ t('leave_review') }}</h3>
   <form method="post" class="form form-inline">
     <select name="vendor_id" required>
-      <option value="">Select vendor…</option>
+      <option value="">{{ t('select_vendor_placeholder') }}</option>
       {% for v in vendors %}<option value="{{ v.vendor_id }}">{{ v.business_name }}</option>{% endfor %}
     </select>
     <select name="rating" required>
-      {% for n in [5,4,3,2,1] %}<option value="{{ n }}">{{ n }} star{{ '' if n == 1 else 's' }}</option>{% endfor %}
+      {% for n in [5,4,3,2,1] %}<option value="{{ n }}">{{ n }} ★</option>{% endfor %}
     </select>
-    <input name="review_text" placeholder="Tell other couples what you thought" style="flex:1; min-width:240px;">
-    <button class="btn btn-primary">Post review</button>
+    <input name="review_text" placeholder="{{ t('tell_couples') }}" class="grow-input">
+    <button class="btn btn-primary">{{ icon('star-fill', 16) }}{{ t('post_review') }}</button>
   </form>
-</div>
+</section>
 
-<div class="card">
-  <h3>Latest reviews</h3>
+<section class="data-panel">
+  <h3>{{ t('latest_reviews') }}</h3>
   {% for r in rows %}
     <div class="review">
       <strong>{{ r.business_name }}</strong>
@@ -30,8 +28,7 @@
       <p>{{ r.review_text }}</p>
     </div>
   {% else %}
-    <p class="muted">No reviews yet.</p>
+    {{ empty_state(t('no_reviews'), '', '', '', 'star') }}
   {% endfor %}
-</div>
-
+</section>
 {% endblock %}

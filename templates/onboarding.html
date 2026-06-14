@@ -1,53 +1,93 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon %}
-{% block title %}Welcome · Vowly{% endblock %}
+{% from "_icons.html" import icon, supplier_icon %}
+{% block title %}{{ t('onboarding_title').format(name='') }} · Vowly{% endblock %}
+{% block body_class %}wizard-body{% endblock %}
 
 {% block content %}
-<header class="page-header onboarding-header">
-  <div>
-    <h1>Welcome to Vowly{% if user %}, {{ user.full_name.split(' ')[0] }}{% endif %} <span class="inline-icon">{{ icon('rings', 24) }}</span></h1>
-    <p class="muted">
-      What would you like to start with? Pick the suppliers that are top of mind —
-      we'll mark them as <em>In progress</em> and you can manage everything else from Home.
-    </p>
-    {% if role %}
-      <p class="muted small">Showing suppliers relevant to: <strong>{{ role }}</strong>.</p>
-    {% endif %}
-  </div>
-</header>
+{% set first_name = user.full_name.split(' ')[0] if user else '' %}
 
-<form method="post" action="{{ url_for('onboarding') }}" class="onboarding-form">
-  {% for category, items in grouped_suppliers.items() %}
-    <section class="card category-card">
-      <header class="category-card-header">
-        <h2>{{ category }}</h2>
-        <span class="muted small">{{ items|length }} suppliers</span>
-      </header>
+<form method="post" action="{{ url_for('onboarding') }}" class="wizard" id="wizard" data-step="1">
 
-      <div class="supplier-grid">
-        {% for s in items %}
-          <label class="supplier-pick" for="pick-{{ s.code }}">
-            <input type="checkbox"
-                   id="pick-{{ s.code }}"
-                   name="start_with"
-                   value="{{ s.code }}"
-                   {% if state.get(s.code) and state.get(s.code).status == 'In progress' %}checked{% endif %}>
-            <div class="supplier-pick-body">
-              <div class="supplier-pick-title">
-                <span class="check"></span>
-                <strong>{{ s.name }}</strong>
-              </div>
-              <p class="muted small">{{ s.description }}</p>
-            </div>
-          </label>
-        {% endfor %}
+  <header class="wizard-head">
+    <p class="wizard-step-label" id="wizard-step-label"
+       data-template="{{ t('step_of') }}">{{ t('step_of').format(step=1, total=2) }}</p>
+    <div class="wizard-bar" aria-hidden="true"><span class="wizard-bar-fill" id="wizard-bar-fill"></span></div>
+  </header>
+
+  {# ────────────── Step 1 · wedding basics ────────────── #}
+  <section class="wizard-step is-active" data-step="1">
+    <div class="wizard-intro">
+      <h1>{{ t('onboarding_title').format(name=(', ' ~ first_name) if first_name else '') }} 🤍</h1>
+      <h2>{{ t('wizard_basics_title') }}</h2>
+      <p class="muted">{{ t('wizard_basics_sub') }}</p>
+    </div>
+
+    <div class="wizard-fields form">
+      <label>{{ t('wedding_date') }}
+        <input type="date" name="wedding_date" value="{{ w.wedding_date if w and w.wedding_date else '' }}">
+      </label>
+      <label>{{ t('city') }}
+        <select name="city">
+          <option value="" {% if not (w and w.city) %}selected{% endif %} disabled>{{ t('select_city') }}</option>
+          {% for city in city_options %}
+            <option value="{{ city }}" {% if w and w.city == city %}selected{% endif %}>{{ city_label(city) }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="form-row">
+        <label>{{ t('estimated_guests') }}
+          <input type="number" name="estimated_guests" min="1" inputmode="numeric"
+                 value="{{ w.estimated_guests if w and w.estimated_guests else '' }}">
+        </label>
+        <label>{{ t('total_budget') }} (₪)
+          <input type="number" name="budget" min="0" step="500" inputmode="numeric"
+                 value="{{ w.budget if w and w.budget else '' }}">
+        </label>
       </div>
-    </section>
-  {% endfor %}
+    </div>
 
-  <div class="onboarding-actions">
-    <a class="btn btn-ghost" href="{{ url_for('home') }}">Skip — see Home</a>
-    <button class="btn btn-primary btn-large" type="submit">Start planning</button>
-  </div>
+    <div class="wizard-actions">
+      <a class="btn btn-ghost" href="{{ url_for('home') }}">{{ t('skip_for_now') }}</a>
+      <button type="button" class="btn btn-primary btn-large" data-wizard-next>
+        {{ t('next_step') }} {{ icon('arrow-right' if text_dir == 'ltr' else 'arrow-left', 16) }}
+      </button>
+    </div>
+  </section>
+
+  {# ────────────── Step 2 · pick suppliers ────────────── #}
+  <section class="wizard-step" data-step="2" hidden>
+    <div class="wizard-intro">
+      <h2>{{ t('wizard_pick_title') }}</h2>
+      <p class="muted">{{ t('wizard_pick_sub') }}</p>
+      {% if role %}<p class="muted small role-note">{{ t('showing_role').format(role=td('role', role)) }}</p>{% endif %}
+    </div>
+
+    {% for category, items in grouped_suppliers.items() %}
+      <section class="pick-group">
+        <h3 class="pick-group-title">{{ td('group', category) }}
+          <span class="muted small">{{ t('suppliers_count').format(count=items|length) }}</span>
+        </h3>
+        <div class="pick-grid">
+          {% for s in items %}
+            <label class="pick-card" for="pick-{{ s.code }}">
+              <input type="checkbox" id="pick-{{ s.code }}" name="start_with" value="{{ s.code }}"
+                     {% if state.get(s.code) and state.get(s.code).status == 'In progress' %}checked{% endif %}>
+              <span class="pick-icon">{{ supplier_icon(s.code, 20) }}</span>
+              <span class="pick-name">{{ supplier_label(s) }}</span>
+              <span class="pick-check">{{ icon('check', 14) }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+
+    <div class="wizard-actions">
+      <button type="button" class="btn btn-ghost" data-wizard-back>
+        {{ icon('arrow-left' if text_dir == 'ltr' else 'arrow-right', 16) }} {{ t('back') }}
+      </button>
+      <button class="btn btn-primary btn-large" type="submit">{{ t('start_planning') }}</button>
+    </div>
+  </section>
+
 </form>
 {% endblock %}

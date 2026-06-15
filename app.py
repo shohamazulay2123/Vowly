@@ -67,367 +67,6 @@ DEFAULT_LANGUAGE = "he"
 
 
 TRANSLATIONS = {
-    "en": {
-        "app_title": "Vowly · Plan your perfect wedding",
-        "brand_tagline": "Match with the suppliers that fit your wedding.",
-        "home": "Home",
-        "liked": "Liked",
-        "settings": "Settings",
-        "logout": "Logout",
-        "login": "Login",
-        "sign_up": "Sign up",
-        "footer": "Crafted for couples in love.",
-        "settings_title": "Settings",
-        "settings_subtitle": "Choose how Vowly feels and which vendors appear first.",
-        "about_us": "About us",
-        "about_text": "Vowly helps couples plan their wedding from one calm place: track supplier progress, discover vendors, save favorites, and keep the next decision clear.",
-        "preferences": "Preferences",
-        "language": "Language",
-        "english": "English",
-        "hebrew": "Hebrew",
-        "distance": "Vendor distance",
-        "distance_value": "{value} km",
-        "distance_hint": "Used in swipe mode to prioritize vendors near your city.",
-        "save_settings": "Save settings",
-        "settings_saved": "Settings saved.",
-        "home_title": "Home",
-        "welcome_back": "Home",
-        "days_until": "days until",
-        "day_until": "day until",
-        "set_wedding_date": "Set your wedding date",
-        "booked": "Booked",
-        "in_progress": "In progress",
-        "to_do": "To do",
-        "search_vendors": "Search vendors",
-        "all": "All",
-        "no_suppliers": "No suppliers match these filters.",
-        "search_supplier": "Search for supplier",
-        "no_suppliers_found": "No suppliers found",
-        "try_another_search": "Try another search.",
-        "open_menu": "Open menu",
-        "main_navigation": "Main navigation",
-        "close": "Close",
-        "back": "Back",
-        "back_home": "Back home",
-        "back_to_home": "Back to Home",
-        "save": "Save",
-        "saved": "Saved",
-        "could_not_save": "Could not save",
-        "view": "View",
-        "select": "Select",
-        "remove": "Remove",
-        "new": "New",
-        "match": "Match",
-        "skip": "Skip",
-        "like": "Like",
-        "more_info": "More info",
-        "view_profile": "View profile",
-        "see_all": "See all",
-        "start_swiping": "Start swiping",
-        "no_liked_vendors": "No liked vendors yet",
-        "liked_subtitle": "Vendors you liked while swiping. Pick the ones you want to shortlist.",
-        "match_queue": "Match queue",
-        "tap_card_hint": "Tap a card for details · drag or use arrows",
-        "home_greeting": "Hi {name}",
-        "home_greeting_pair": "Hi {name} & {partner}",
-        "mazel_tov_past": "Mazel tov — your wedding has passed",
-        "booked_ratio": "{booked} / {total} booked",
-        "category_meta": "{booked}/{total} booked · {progress} in progress",
-        "next_match": "Next matches",
-        "profile_title_create": "Create your wedding profile",
-        "profile_title_edit": "Edit your wedding profile",
-        "partner_name": "Partner's name",
-        "wedding_date": "Wedding date",
-        "estimated_guests": "Estimated guests",
-        "total_budget": "Total budget",
-        "city": "City",
-        "venue_type": "Venue type preference",
-        "choose": "Choose",
-        "save_changes": "Save changes",
-        "create_profile": "Create profile",
-        "discover_vendors": "Discover vendors",
-        "search_business": "Search business or description",
-        "all_categories": "All categories",
-        "all_cities": "All cities",
-        "min_rating": "Min rating",
-        "max_price": "Max price",
-        "filter": "Filter",
-        "no_vendors": "No vendors match your filters.",
-        "about": "About",
-        "contact": "Contact",
-        "reviews": "Reviews",
-        "no_reviews": "No reviews yet",
-        "leave_first_review": "leave the first one",
-        "remove_favorite": "Remove favorite",
-        "add_favorite": "Add to favorites",
-        "select_vendor": "Select vendor",
-        "selected_vendors": "Selected vendors",
-        "agreed_price": "Agreed price",
-        "notes": "Notes",
-        "vendor": "Vendor",
-        "category": "Category",
-        "status": "Status",
-        "no_selected_vendors": "You have not selected any vendors yet.",
-        "remove_selected_confirm": "Remove from selected?",
-        "chosen": "Chosen",
-        "per_meal": "per meal",
-        "guest_count_est": "Estimated guests",
-        "price_per_meal": "Price per meal (₪)",
-        "venue_select_title": "Venue details",
-        "confirm_select": "Add to shortlist",
-        "cancel": "Cancel",
-        "appointments": "Appointments",
-        "schedule_new": "Schedule new",
-        "select_vendor_placeholder": "Select vendor...",
-        "location": "Location",
-        "schedule": "Schedule",
-        "date": "Date",
-        "no_appointments": "No appointments yet.",
-        "leave_review": "Leave a review",
-        "tell_couples": "Tell other couples what you thought",
-        "post_review": "Post review",
-        "latest_reviews": "Latest reviews",
-        "analytics": "Analytics",
-        "analytics_subtitle": "Live planning data from the Vowly database.",
-        "users": "Users",
-        "weddings": "Weddings",
-        "vendors": "Vendors",
-        "vendors_per_category": "Vendors per category",
-        "avg_rating_per_category": "Average rating per category",
-        "most_liked_vendors": "Most liked vendors",
-        "most_skipped_vendors": "Most skipped vendors",
-        "popular_categories": "Popular categories",
-        "top_cities": "Top cities",
-        "checklist_progress": "Checklist progress",
-        "budget_estimated_actual": "Budget estimated vs actual",
-        "elite_vendors": "Elite vendors",
-        "interactions": "Interactions",
-        "likes": "Likes",
-        "skips": "Skips",
-        "average_rating": "Avg rating",
-        "completed": "Completed",
-        "total": "Total",
-        "actual": "Actual",
-        "estimated": "Estimated",
-        "couple": "Couple",
-        "onboarding_title": "Welcome to Vowly{name}",
-        "onboarding_subtitle": "Choose the supplier matches you want to start with. We will mark them as in progress and build your planning deck around them.",
-        "showing_role": "Showing suppliers relevant to: {role}.",
-        "suppliers_count": "{count} suppliers",
-        "skip_home": "Skip and see Home",
-        "start_planning": "Start planning",
-        "auth_headline": "Find the suppliers worth saying yes to.",
-        "auth_login_title": "Welcome back",
-        "auth_login_subtitle": "Log in to keep matching with the right suppliers.",
-        "auth_register_title": "Create your account",
-        "auth_register_subtitle": "Start planning your wedding in minutes.",
-        "email": "Email",
-        "password": "Password",
-        "full_name": "Full name",
-        "phone": "Phone",
-        "select_city": "Select city...",
-        "i_am_the": "I am the",
-        "select_one": "Select one...",
-        "bride": "Bride",
-        "groom": "Groom",
-        "partner_details": "Your partner's details",
-        "partner_email": "Partner's email",
-        "partner_phone": "Partner's phone",
-        "create_account": "Create account",
-        "new_to_vowly": "New to Vowly?",
-        "create_account_link": "Create an account",
-        "already_account": "Already have an account?",
-        "login_required": "Please log in to continue.",
-        "session_expired": "Session expired. Please log in again.",
-        "missing_register_fields": "Name, email and password are required.",
-        "missing_partner_fields": "Please fill in your partner's name, email and phone.",
-        "email_registered": "That email is already registered.",
-        "welcome_setup": "Welcome to Vowly! Let's set up your match dashboard.",
-        "welcome_back_name": "Welcome back, {name}!",
-        "invalid_login": "Invalid email or password.",
-        "oauth_failed": "Sign-in failed. Please try again.",
-        "oauth_no_email": "Could not retrieve your email address from that account.",
-        "oauth_not_configured": "That sign-in method is not configured yet.",
-        "continue_google": "Continue with Google",
-        "continue_facebook": "Continue with Facebook",
-        "continue_apple": "Continue with Apple",
-        "or_divider": "or",
-        "logged_out": "You have been logged out.",
-        "profile_updated": "Wedding profile updated.",
-        "profile_created": "Wedding profile created. Welcome to Vowly!",
-        "picked_suppliers": "Great. We marked {count} supplier(s) as in progress.",
-        "favorite_added": "Added to favorites.",
-        "favorite_removed": "Removed from favorites.",
-        "shortlist_added": "Vendor added to your shortlist.",
-        "selection_updated": "Selection updated.",
-        "appointment_required": "Vendor and date are required.",
-        "appointment_scheduled": "Appointment scheduled.",
-        "review_required": "Vendor and a 1-5 rating are required.",
-        "review_posted": "Review posted.",
-        "page_not_found": "Page not found",
-        "server_error": "Something went wrong",
-        # --- Vowly 2.0 ---
-        "plan": "Plan",
-        "discover": "Discover",
-        "profile": "Profile",
-        "plan_title": "Your plan",
-        "plan_subtitle": "Every supplier for your big day, in one list.",
-        "discover_title": "Discover",
-        "discover_subtitle": "Swipe through vendors and like the ones you'd say yes to.",
-        "left_in_queue": "{count} to review",
-        "all_caught_up": "All caught up!",
-        "caught_up_sub": "You've seen every vendor here. Pick another category to keep matching.",
-        "your_wedding": "Your wedding",
-        "days_to_go": "days to go",
-        "day_to_go": "day to go",
-        "add_wedding_date": "Add your wedding date",
-        "planning_progress": "Planning progress",
-        "of_suppliers_booked": "{booked} of {total} booked",
-        "keep_matching": "Keep matching",
-        "view_full_plan": "See full plan",
-        "up_next": "Up next",
-        "recently_liked": "Recently liked",
-        "good_morning": "Good morning",
-        "good_afternoon": "Good afternoon",
-        "good_evening": "Good evening",
-        "step_of": "Step {step} of {total}",
-        "wizard_basics_title": "Tell us about your big day",
-        "wizard_basics_sub": "A few details so Vowly can tailor everything for you. You can change these anytime.",
-        "wizard_pick_title": "What do you want to tackle first?",
-        "wizard_pick_sub": "Pick a few suppliers to focus on. We'll build your matching queue around them.",
-        "next_step": "Next",
-        "skip_for_now": "Skip for now",
-        "wedding_details": "Wedding details",
-        "edit": "Edit",
-        "guests": "Guests",
-        "budget": "Budget",
-        "account": "Account",
-        "more_tools": "More tools",
-        "not_set": "Not set",
-        "next_appointment": "Next appointment",
-        "auth_welcome": "Say yes to the right suppliers.",
-        "auth_welcome_sub": "Vowly matches you with wedding vendors you'll love — swipe, shortlist, book.",
-        # ── Dashboard ──
-        "dash_overview": "Your wedding at a glance",
-        "stat_completed": "Tasks done",
-        "stat_in_progress": "In progress",
-        "stat_meetings": "Meetings",
-        "stat_favorites": "Saved",
-        "your_journey": "Your planning journey",
-        "upcoming_tasks": "Your upcoming tasks",
-        "all_tasks": "All tasks",
-        "tasks_all_done": "All caught up — nothing pending 🎉",
-        "recommended": "Recommended",
-        "vendor_categories": "Explore vendors",
-        "browse_all": "Browse all",
-        "next_step_label": "Your next step",
-        "next_step_book": "Find your {name}",
-        "continue_planning": "Continue planning",
-        "all_set": "You're all set",
-        "all_set_sub": "Every supplier is booked — time to celebrate!",
-        "stage_venue": "Choose venue",
-        "stage_vendors": "Vendors",
-        "stage_tasting": "Tastings",
-        "stage_invites": "Invitations",
-        "stage_seating": "Seating",
-        "stage_week": "Wedding week",
-        # NBA
-        "nba_set_date": "Set your wedding date",
-        "nba_set_date_sub": "Your timeline and every supplier reminder is built around it.",
-        "nba_set_guests": "Estimate your guest count",
-        "nba_set_guests_sub": "It shapes your venue search and budget formula.",
-        "nba_set_budget": "Set your total budget",
-        "nba_set_budget_sub": "We'll help you track every shekel.",
-        "nba_find_venue": "Choose 3–5 venues to visit",
-        "nba_find_venue_sub": "The venue fixes your date, guest capacity, catering, and every other vendor.",
-        "nba_core_vendor": "Find your {name}",
-        "nba_core_vendor_sub": "Good {name}s get booked months ahead — don't wait.",
-        "nba_ceremony_route": "Choose your ceremony route",
-        "nba_ceremony_route_sub": "Vowly will build the correct legal and ceremony checklist for you.",
-        "nba_rabbinate_docs": "Start your Rabbinate marriage file",
-        "nba_rabbinate_docs_sub": "Marriage registration and documents take time — start early.",
-        "nba_guest_list": "Create your guest list",
-        "nba_guest_list_sub": "Add names, sides, and contact details to track RSVPs.",
-        "nba_rsvp_followup": "Follow up with guests",
-        "nba_rsvp_followup_sub": "{count} guests haven't answered yet.",
-        "nba_wedding_month": "Wedding month — {days} days to go",
-        "nba_wedding_month_sub": "Confirm all suppliers, finalize seating, and clear unpaid balances.",
-        "nba_wedding_day": "Today is your wedding day!",
-        "nba_wedding_day_sub": "Focus on the timeline, supplier contacts, and your final checklist.",
-        # Guests
-        "guest_list": "Guest list",
-        "add_guest": "Add guest",
-        "no_guests": "No guests added yet.",
-        "guest_added": "Guest added.",
-        "guest_deleted": "Guest removed.",
-        "guest_updated": "Guest updated.",
-        "rsvp_unknown": "No answer",
-        "rsvp_invited": "Invited",
-        "rsvp_coming": "Coming",
-        "rsvp_not_coming": "Not coming",
-        "rsvp_maybe": "Maybe",
-        "rsvp_needs_follow_up": "Needs follow-up",
-        "rsvp_status": "RSVP status",
-        "side_bride": "Bride's side",
-        "side_groom": "Groom's side",
-        "side_shared": "Shared",
-        "side_family": "Family",
-        "side_work": "Work",
-        "side_friends": "Friends",
-        "total_guests": "Total guests",
-        "confirmed_coming": "Confirmed",
-        "not_answered": "No answer",
-        "invitation_sent_label": "Invite sent",
-        "meal_notes": "Meal notes",
-        "table_number": "Table",
-        "guest_notes": "Notes",
-        "guest_side": "Side",
-        "guest_group": "Group",
-        "guest_phone": "Phone",
-        # Budget
-        "budget_title": "Budget",
-        "budget_subtitle": "Track every cost from estimate to final payment.",
-        "add_budget_item": "Add item",
-        "budget_category": "Category",
-        "estimated_amount": "Estimated",
-        "actual_amount": "Actual",
-        "paid_amount": "Paid",
-        "remaining": "Remaining",
-        "due_date": "Due date",
-        "payment_status": "Payment",
-        "not_paid": "Not paid",
-        "deposit_paid": "Deposit paid",
-        "partially_paid": "Partially paid",
-        "paid_full": "Paid in full",
-        "budget_total_estimated": "Estimated total",
-        "budget_total_actual": "Committed",
-        "budget_total_paid": "Paid so far",
-        "budget_over": "Over budget",
-        "budget_under": "Under budget",
-        "budget_item_added": "Budget item added.",
-        "budget_item_updated": "Budget item updated.",
-        "budget_item_deleted": "Budget item removed.",
-        "price_per_guest": "Est. price per guest (₪)",
-        "next_payment_due": "Next payment due",
-        "no_budget_items": "No budget items yet.",
-        "budget_required_fields": "Category and estimated amount are required.",
-        # Ceremony
-        "ceremony_route": "Ceremony route",
-        "ceremony_route_label": "How are you getting married?",
-        "route_rabbinate": "Rabbinate",
-        "route_private_rabbi": "Private rabbi",
-        "route_civil_abroad": "Civil marriage abroad",
-        "route_utah_online": "Utah / online civil",
-        "route_symbolic": "Symbolic ceremony",
-        "route_other": "Other",
-        "route_unknown": "Not decided yet",
-        # Wedding month
-        "wedding_month_mode": "Wedding month",
-        "see_plan": "See full plan",
-        "see_guests": "See guest list",
-        "see_budget": "See budget",
-        "confirm_suppliers": "Confirm suppliers",
-    },
     "he": {
         "app_title": "Vowly · תכנון חתונה מושלם",
         "brand_tagline": "מאצ׳ים עם הספקים שמתאימים לחתונה שלכם.",
@@ -443,9 +82,6 @@ TRANSLATIONS = {
         "about_us": "עלינו",
         "about_text": "Vowly עוזרת לזוגות לתכנן חתונה במקום אחד רגוע: לעקוב אחרי התקדמות ספקים, לגלות ספקים, לשמור מועדפים ולהתקדם להחלטה הבאה.",
         "preferences": "העדפות",
-        "language": "שפה",
-        "english": "אנגלית",
-        "hebrew": "עברית",
         "distance": "מרחק ספקים",
         "distance_value": "{value} ק״מ",
         "distance_hint": "משמש במסך הסווייפ כדי לתעדף ספקים ליד העיר שלכם.",
@@ -793,40 +429,6 @@ TRANSLATIONS = {
 
 
 DISPLAY_TRANSLATIONS = {
-    "en": {
-        "status": {
-            "Not started": "Not started",
-            "In progress": "In progress",
-            "Booked": "Booked",
-            "Not relevant": "Not relevant",
-            "Considering": "Considering",
-            "Contacted": "Contacted",
-            "Meeting Scheduled": "Meeting Scheduled",
-            "Rejected": "Rejected",
-            "Scheduled": "Scheduled",
-            "Completed": "Completed",
-            "Cancelled": "Cancelled",
-        },
-        "role": {"Bride": "Bride", "Groom": "Groom", "Other": "Other"},
-        "group": {
-            "Must-have suppliers": "Must-have suppliers",
-            "Important extras": "Important extras",
-            "Personal preparation": "Personal preparation",
-        },
-        "category": {
-            "Venue": "Venue", "Catering": "Catering", "Alcohol Bar": "Alcohol Bar",
-            "Photographer": "Photographer", "Videographer": "Videographer", "DJ": "DJ",
-            "Flowers": "Flowers", "Wedding Dress": "Wedding Dress", "Groom Suit": "Groom Suit",
-            "Hair Stylist": "Hair Stylist", "Makeup Artist": "Makeup Artist", "Rings": "Rings",
-            "Invitations": "Invitations", "Rabbi/Officiant": "Rabbi/Officiant",
-            "Transportation": "Transportation", "Wedding Planner": "Wedding Planner",
-            "Cake/Desserts": "Cake/Desserts",
-        },
-        "venue_type": {
-            "Garden": "Garden", "Hall": "Hall", "Beach": "Beach", "Loft": "Loft",
-            "Vineyard": "Vineyard", "Rooftop": "Rooftop",
-        },
-    },
     "he": {
         "status": {
             "Not started": "עוד לא התחיל",
@@ -865,7 +467,6 @@ DISPLAY_TRANSLATIONS = {
 
 
 SUPPLIER_DISPLAY = {
-    "en": {},
     "he": {
         "venue": ("אולם / גן אירועים", "המקום עצמו: זמינות תאריכים, קיבולת, חניה, נגישות ומה כלול."),
         "catering": ("קייטרינג / אוכל", "תפריט, טעימות, מנות צמחוניות/טבעוניות, ילדים ונשנושים לשעות המאוחרות."),
@@ -971,21 +572,17 @@ CITY_OPTIONS = [
 
 
 def _language_for(user):
-    lang = (user["language"] if user and "language" in user.keys() else None) or session.get("language") or DEFAULT_LANGUAGE
-    return lang if lang in TRANSLATIONS else DEFAULT_LANGUAGE
+    return DEFAULT_LANGUAGE
 
 
 def _t(lang, key):
-    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, TRANSLATIONS["en"].get(key, key))
+    return TRANSLATIONS[DEFAULT_LANGUAGE].get(key, key)
 
 
 def _display(lang, kind, value):
     if value is None:
         return ""
-    return DISPLAY_TRANSLATIONS.get(lang, {}).get(kind, {}).get(
-        value,
-        DISPLAY_TRANSLATIONS["en"].get(kind, {}).get(value, value),
-    )
+    return DISPLAY_TRANSLATIONS[DEFAULT_LANGUAGE].get(kind, {}).get(value, value)
 
 
 def _supplier_text(lang, supplier, field="name"):
@@ -1001,7 +598,7 @@ def _supplier_text(lang, supplier, field="name"):
 def _city_label(lang, city):
     if not city:
         return ""
-    return CITY_DISPLAY_HE.get(city, city) if lang == "he" else city
+    return CITY_DISPLAY_HE.get(city, city)
 
 
 def _date_label(lang, value):
@@ -1009,7 +606,7 @@ def _date_label(lang, value):
         return ""
     try:
         dt = datetime.strptime(str(value)[:10], "%Y-%m-%d")
-        return dt.strftime("%d.%m.%Y") if lang == "he" else dt.strftime("%b %d, %Y")
+        return dt.strftime("%d.%m.%Y")
     except (ValueError, TypeError):
         return value
 
@@ -1162,7 +759,12 @@ def index():
         flash(_t(lang, "invalid_login"), "error")
         return redirect(url_for("index", mode="login"))
 
-    return render_template("index.html", mode=mode)
+    return render_template(
+        "index.html",
+        mode=mode,
+        oauth_google_enabled=_oauth_is_configured("google"),
+        oauth_facebook_enabled=_oauth_is_configured("facebook"),
+    )
 
 
 # Aliases so old links keep working
@@ -1191,6 +793,18 @@ def logout():
 _OAUTH_PROVIDERS = {"google", "facebook"}
 
 
+def _oauth_is_configured(provider):
+    if provider == "google":
+        if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
+            return False
+    elif provider == "facebook":
+        if not (FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET):
+            return False
+    else:
+        return False
+    return oauth.create_client(provider) is not None
+
+
 def _oauth_redirect_uri(provider):
     callback_path = url_for("auth_callback", provider=provider)
     if VOWLY_PUBLIC_BASE_URL:
@@ -1201,7 +815,7 @@ def _oauth_redirect_uri(provider):
 @app.route("/auth/<provider>")
 def auth_provider(provider):
     lang = _language_for(None)
-    if provider not in _OAUTH_PROVIDERS:
+    if provider not in _OAUTH_PROVIDERS or not _oauth_is_configured(provider):
         flash(_t(lang, "oauth_not_configured"), "error")
         return redirect(url_for("index"))
     try:
@@ -1209,19 +823,32 @@ def auth_provider(provider):
     except Exception:
         flash(_t(lang, "oauth_not_configured"), "error")
         return redirect(url_for("index"))
+    if client is None:
+        flash(_t(lang, "oauth_not_configured"), "error")
+        return redirect(url_for("index"))
     redirect_uri = _oauth_redirect_uri(provider)
-    return client.authorize_redirect(redirect_uri)
+    try:
+        return client.authorize_redirect(redirect_uri)
+    except Exception:
+        app.logger.exception("OAuth authorize redirect failed for provider '%s'", provider)
+        flash(_t(lang, "oauth_failed"), "error")
+        return redirect(url_for("index"))
 
 
 @app.route("/auth/<provider>/callback")
 def auth_callback(provider):
     lang = _language_for(None)
-    if provider not in _OAUTH_PROVIDERS:
+    if provider not in _OAUTH_PROVIDERS or not _oauth_is_configured(provider):
+        flash(_t(lang, "oauth_not_configured"), "error")
         return redirect(url_for("index"))
     try:
         client = oauth.create_client(provider)
+        if client is None:
+            flash(_t(lang, "oauth_not_configured"), "error")
+            return redirect(url_for("index"))
         token  = client.authorize_access_token()
     except Exception:
+        app.logger.exception("OAuth callback failed for provider '%s'", provider)
         flash(_t(lang, "oauth_failed"), "error")
         return redirect(url_for("index"))
 
@@ -1269,20 +896,17 @@ def settings():
     user = current_user()
     lang = _language_for(user)
     if request.method == "POST":
-        language = request.form.get("language", DEFAULT_LANGUAGE)
-        if language not in TRANSLATIONS:
-            language = DEFAULT_LANGUAGE
         distance = request.form.get("distance_km", type=int) or 50
         distance = max(5, min(distance, 300))
         execute(
             "UPDATE users SET language=?, distance_km=? WHERE user_id=?",
-            (language, distance, session["user_id"]),
+            (DEFAULT_LANGUAGE, distance, session["user_id"]),
         )
-        session["language"] = language
-        flash(_t(language, "settings_saved"), "success")
+        session["language"] = DEFAULT_LANGUAGE
+        flash(_t(lang, "settings_saved"), "success")
         return redirect(url_for("settings"))
     distance_km = user["distance_km"] if user and "distance_km" in user.keys() and user["distance_km"] else 50
-    return render_template("settings.html", selected_language=lang, distance_km=distance_km)
+    return render_template("settings.html", distance_km=distance_km)
 
 
 # ---------------------------------------------------------------------------
@@ -2745,3 +2369,4 @@ def server_error(_e):
 if __name__ == "__main__":
     init_db()
     app.run(debug=os.getenv("FLASK_DEBUG", "0") == "1")
+

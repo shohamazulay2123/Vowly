@@ -274,8 +274,7 @@ def init_db():
         if col not in existing:
             conn.execute(ddl)
 
-    # Hebrew is now the product default. Existing English/unset users move to
-    # Hebrew once; they can still switch back to English in Settings.
+    # Hebrew-only mode: migrate existing English/unset users to Hebrew.
     conn.execute("UPDATE users SET language='he' WHERE language IS NULL OR language='' OR language='en'")
 
     # --- Lightweight migrations: add new columns to existing wedding_profiles ---

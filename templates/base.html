@@ -106,7 +106,7 @@
     couldNotSave: {{ t('could_not_save')|tojson }},
     bookedRatio: {{ t('booked_ratio')|tojson }},
     categoryMeta: {{ t('category_meta')|tojson }},
-    website: {{ ('Website' if lang == 'en' else 'אתר')|tojson }}
+    website: {{ 'אתר'|tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>

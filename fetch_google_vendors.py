@@ -135,7 +135,7 @@ def _price_range(place: dict) -> tuple[int, int]:
 def _search_google(text_query: str) -> list[dict]:
     body = {
         "textQuery": text_query,
-        "languageCode": "en",
+        "languageCode": "he",
         "regionCode": "IL",
         "pageSize": LIMIT_PER_SEARCH,
     }
